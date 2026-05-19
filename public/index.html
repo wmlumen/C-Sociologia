@@ -113,6 +113,7 @@
         <div class="font-bold text-xl tracking-tighter mb-1 titulo-institucional">INSTITUTO SUPERIOR <span class="text-red-600">CENTURIA</span></div>
         <h1 class="text-lg font-bold mt-3">Examen - Sociología</h1>
         <p class="text-sm text-gray-italic">30 Preguntas | 15 Selección Múltiple + 15 V/F</p>
+        <p class="text-[11px] text-gray-400 mt-2">Version V1 - 2026-05-19 20:38</p>
     </div>
     <div class="space-y-3">
         <div>
@@ -421,6 +422,18 @@ let currentStudent = { name: '', ci: '', isTest: false, attempts: 0 };
 let timeLeft = 3600;
 let timerInterval;
 let examInProgress = { name: '', ci: '', startTime: null, answers: {} };
+let examFinished = false;
+
+const GOOGLE_FORM_CONFIG = {
+    actionUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSc3Hwo9TfxRbKlD1PElbhq-OVoMsF_OalTxsvqS04RClsqwww/formResponse',
+    viewUrl: 'https://forms.gle/85XwZKndrapCMPB57',
+    entries: {
+        name: 'entry.326235561',
+        ci: 'entry.1096330657',
+        score: 'entry.411120330',
+        answers: 'entry.1033458255'
+    }
+};
 
 function shuffleArray(array) {
     const arr = [...array];
@@ -482,7 +495,9 @@ function renderSection2() {
 }
 
 function renderSection3() {
+    if (!examData.section3) return;
     const container = document.getElementById('section3-questions');
+    if (!container) return;
     examData.section3.forEach((item, idx) => {
         const div = document.createElement('div');
         div.innerHTML = `
@@ -595,6 +610,8 @@ function calcularPuntaje() {
 }
 
 function finalizarExamen() {
+    if (examFinished) return;
+    examFinished = true;
     clearInterval(timerInterval);
     
     if (currentStudent.isTest) {
@@ -625,7 +642,7 @@ function finalizarExamen() {
     guardarResultado(result);
 }
 
-function guardarResultado(result) {
+function recolectarRespuestas() {
     // Recolectar respuestas para análisis del docente
     const rawAnswers = {};
     for (let i = 0; i < 15; i++) {
@@ -637,6 +654,59 @@ function guardarResultado(result) {
         if (sel) rawAnswers[`q2_${i}`] = sel.value;
     }
     
+    return rawAnswers;
+}
+
+function crearDetalleParaFormulario(record) {
+    const multiple = examData.section1.map((item, i) => {
+        const opciones = ['A', 'B', 'C', 'D'];
+        const respuesta = record.rawAnswers[`q1_${i}`];
+        const correcta = item.answer;
+        const marcada = respuesta !== undefined ? opciones[respuesta] : 'NR';
+        const estado = respuesta === correcta ? 'OK' : 'MAL';
+        return `I.${i + 1}: ${marcada} | Correcta: ${opciones[correcta]} | ${estado} | ${item.q.replace(/^\d+\.\s*/, '')}`;
+    }).join('\n');
+
+    const verdaderoFalso = examData.section2.map((item, i) => {
+        const respuesta = record.rawAnswers[`q2_${i}`];
+        const correcta = item.isTrue ? 'V' : 'F';
+        const marcada = respuesta || 'NR';
+        const estado = respuesta === correcta ? 'OK' : 'MAL';
+        return `II.${i + 1}: ${marcada} | Correcta: ${correcta} | ${estado} | ${item.q.replace(/^\d+\.\s*/, '')}`;
+    }).join('\n');
+
+    return [
+        `Estudiante: ${record.name}`,
+        `Cedula: ${record.ci}`,
+        `Puntaje: ${record.score}/30`,
+        `Intento: ${record.attempt}`,
+        `Fecha: ${record.date} ${record.time}`,
+        '',
+        'SECCION I - SELECCION MULTIPLE',
+        multiple,
+        '',
+        'SECCION II - VERDADERO/FALSO',
+        verdaderoFalso
+    ].join('\n');
+}
+
+function enviarAGoogleForms(record) {
+    const formData = new FormData();
+    formData.append(GOOGLE_FORM_CONFIG.entries.name, record.name);
+    formData.append(GOOGLE_FORM_CONFIG.entries.ci, record.ci);
+    formData.append(GOOGLE_FORM_CONFIG.entries.score, `${record.score}/30`);
+    formData.append(GOOGLE_FORM_CONFIG.entries.answers, crearDetalleParaFormulario(record));
+
+    return fetch(GOOGLE_FORM_CONFIG.actionUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: formData
+    });
+}
+
+function guardarResultado(result) {
+    const rawAnswers = recolectarRespuestas();
+
     const record = {
         name: currentStudent.name,
         ci: currentStudent.ci,
@@ -646,12 +716,36 @@ function guardarResultado(result) {
         time: getTime(),
         datetime: new Date().toISOString(),
         rawAnswers: rawAnswers,
-        summary: result.summary
+        summary: result.summary,
+        googleFormStatus: 'pendiente'
     };
     
     let allResults = JSON.parse(localStorage.getItem('socioResults') || '[]');
     allResults.push(record);
     localStorage.setItem('socioResults', JSON.stringify(allResults));
+
+    let activeExams = JSON.parse(localStorage.getItem('activeExams') || '[]');
+    activeExams = activeExams.filter(e => e.ci !== record.ci);
+    localStorage.setItem('activeExams', JSON.stringify(activeExams));
+
+    enviarAGoogleForms(record)
+        .then(() => {
+            const savedResults = JSON.parse(localStorage.getItem('socioResults') || '[]');
+            const idx = savedResults.findIndex(r => r.datetime === record.datetime && r.ci === record.ci);
+            if (idx >= 0) {
+                savedResults[idx].googleFormStatus = 'enviado';
+                localStorage.setItem('socioResults', JSON.stringify(savedResults));
+            }
+        })
+        .catch(() => {
+            const savedResults = JSON.parse(localStorage.getItem('socioResults') || '[]');
+            const idx = savedResults.findIndex(r => r.datetime === record.datetime && r.ci === record.ci);
+            if (idx >= 0) {
+                savedResults[idx].googleFormStatus = 'error';
+                localStorage.setItem('socioResults', JSON.stringify(savedResults));
+            }
+            alert('El examen quedo guardado en este navegador, pero no se pudo enviar a Google Forms. Revise la conexion e intente nuevamente.');
+        });
 }
 
 function descargarActa() {
@@ -714,11 +808,14 @@ function cargarDatosProfesor() {
     } else {
         allResults.sort((a, b) => new Date(b.datetime) - new Date(a.datetime)).forEach((r) => {
             const percent = ((r.score / 30) * 100).toFixed(0);
+            const formStatus = r.googleFormStatus || 'local';
+            const formStatusClass = formStatus === 'enviado' ? 'text-green-600' : (formStatus === 'error' ? 'text-red-600' : 'text-yellow-600');
             html += `
                 <div class="bg-white p-2 rounded border cursor-pointer hover:bg-green-50" onclick="verDetalleExamen('${r.ci}')">
                     <p class="font-bold text-xs">${r.name}</p>
                     <p class="text-xs text-gray-500">C.I. ${r.ci} | Nota: ${r.score}/30 (${percent}%)</p>
                     <p class="text-xs text-gray-400">${r.date} ${r.time} | Intento: ${r.attempt}</p>
+                    <p class="text-xs ${formStatusClass}">Google Forms: ${formStatus}</p>
                 </div>
             `;
         });
@@ -1067,99 +1164,7 @@ function actualizarPanel() {
 
 // Exportar respuestas para enviar al docente
 function exportStudentAnswers() {
-    // Calcular puntaje y generar detalle
-    let score = 0, smCorrect = 0, vfCorrect = 0;
-    let detalleSM = [];
-    let detalleVF = [];
-    
-    // Sección 1: Selección múltiple
-    for (let i = 0; i < 15; i++) {
-        const sel = document.querySelector(`input[name="q1_${i}"]:checked`);
-        const userAns = sel ? parseInt(sel.value) : -1;
-        const correctAns = examData.section1[i].answer;
-        const isCorrect = userAns === correctAns;
-        if (isCorrect) { score++; smCorrect++; }
-        const opts = ['A', 'B', 'C', 'D'];
-        detalleSM.push({
-            num: i + 1,
-            pregunta: examData.section1[i].q.replace(/^\d+\.\s*/, ''),
-            respuesta: userAns >= 0 ? opts[userAns] : 'NR',
-            correcta: opts[correctAns],
-            esCorrecta: isCorrect
-        });
-    }
-    
-    // Sección 2: Verdadero/Falso
-    for (let i = 0; i < 15; i++) {
-        const sel = document.querySelector(`input[name="q2_${i}"]:checked`);
-        const userAns = sel ? sel.value : '';
-        const correctAns = examData.section2[i].isTrue ? 'V' : 'F';
-        const isCorrect = userAns === correctAns;
-        if (isCorrect) { score++; vfCorrect++; }
-        detalleVF.push({
-            num: i + 1,
-            pregunta: examData.section2[i].q.replace(/^\d+\.\s*/, ''),
-            respuesta: userAns || 'NR',
-            correcta: correctAns,
-            esCorrecta: isCorrect
-        });
-    }
-    
-    const percent = ((score / 30) * 100).toFixed(0);
-    const now = new Date();
-    const fecha = now.toLocaleDateString('es-ES');
-    const hora = now.toLocaleTimeString('es-ES');
-    
-    // Crear informe detallado
-    let informe = `=== EXAMEN SOCIOLOGIA ===\n`;
-    informe += `Estudiante: ${currentStudent.name}\n`;
-    informe += `Cedula: ${currentStudent.ci}\n`;
-    informe += `Fecha: ${fecha} ${hora}\n`;
-    informe += `Nota: ${score}/30 (${percent}%)\n\n`;
-    
-    informe += `--- SECCION I: SELECCION MULTIPLE (${smCorrect}/15) ---\n`;
-    detalleSM.forEach(d => {
-        informe += `${d.num}. ${d.esCorrecta ? '✓' : '✗'} ${d.pregunta.substring(0, 50)}...\n`;
-        informe += `   Tu respuesta: ${d.respuesta} | Correcta: ${d.correcta}\n`;
-    });
-    
-    informe += `\n--- SECCION II: VERDADERO/FALSO (${vfCorrect}/15) ---\n`;
-    detalleVF.forEach(d => {
-        informe += `${d.num}. ${d.esCorrecta ? '✓' : '✗'} ${d.pregunta.substring(0, 50)}...\n`;
-        informe += `   Tu respuesta: ${d.respuesta} | Correcta: ${d.correcta}\n`;
-    });
-    
-    // Descargar informe
-    const blob = new Blob([informe], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Examen_${currentStudent.ci}_detallado.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    // Guardar resultado también en localStorage
-    const data = {
-        name: currentStudent.name,
-        ci: currentStudent.ci,
-        fecha: fecha,
-        hora: hora,
-        score: score,
-        smCorrect: smCorrect,
-        vfCorrect: vfCorrect,
-        percent: percent,
-        detalleSM: detalleSM,
-        detalleVF: detalleVF
-    };
-    
-    let misResultados = JSON.parse(localStorage.getItem('misResultados') || '[]');
-    misResultados.push(data);
-    localStorage.setItem('misResultados', JSON.stringify(misResultados));
-    
-    // Abrir Google Forms para datos básicos
-    window.open('https://docs.google.com/forms/d/1vChM_H3-KlrlvSOJPKdSpv4W-80Uv-ObKQKGv99aQUw/viewform', '_blank');
-    
-    alert(`Examen completado!\n\nNota: ${score}/30 (${percent}%)\n\nSe descargó un archivo con las respuestas detalladas.\nTambién se abrió el formulario del docente para enviar los datos básicos.\n\nEl archivo descargado muestra pregunta por pregunta qué respondiste y cuál era la respuesta correcta.`);
+    finalizarExamen();
 }
 
 // Guardar examen activo
