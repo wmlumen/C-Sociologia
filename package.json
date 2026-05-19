@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Examen de Sociología - Instituto Superior Centuria",
   "scripts": {
-    "dev": "echo \"Ejecutando en desarrollo\"",
+    "dev": "npx serve public",
     "build": "echo \"Build completo\""
   }
 }

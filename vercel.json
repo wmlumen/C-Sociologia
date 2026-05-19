@@ -1,14 +1,7 @@
 {
+  "buildCommand": "echo 'No build needed'",
+  "outputDirectory": ".",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/Index.html" }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" }
-      ]
-    }
+    { "source": "/(.*)", "destination": "/public/index.html" }
   ]
 }
