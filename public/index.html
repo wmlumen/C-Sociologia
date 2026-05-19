@@ -362,7 +362,7 @@ const examData = {
         },
         {
             q: "9. ¿Qué es el Homo Economicus?",
-            options: ["Un primate extinto", "Modelo que假设 al humano como calculador egoísta", "Un tipo de consumidor", "Un agente financiero"],
+            options: ["Un primate extinto", "Modelo que asume al humano como calculador egoista", "Un tipo de consumidor", "Un agente financiero"],
             answer: 1
         },
         {
@@ -1067,37 +1067,53 @@ function actualizarPanel() {
 
 // Exportar respuestas para enviar al docente
 function exportStudentAnswers() {
+    // Calcular puntaje
+    let score = 0, smCorrect = 0, vfCorrect = 0;
+    
+    for (let i = 0; i < 15; i++) {
+        const sel = document.querySelector(`input[name="q1_${i}"]:checked`);
+        if (sel && parseInt(sel.value) === examData.section1[i].answer) {
+            score++; smCorrect++;
+        }
+    }
+    for (let i = 0; i < 15; i++) {
+        const sel = document.querySelector(`input[name="q2_${i}"]:checked`);
+        if (sel && sel.value === (examData.section2[i].isTrue ? 'V' : 'F')) {
+            score++; vfCorrect++;
+        }
+    }
+    
+    const percent = ((score / 30) * 100).toFixed(0);
+    const now = new Date();
+    const fecha = now.toLocaleDateString('es-ES');
+    const hora = now.toLocaleTimeString('es-ES');
+    
+    // Abrir Google Forms con datos prellenados
+    const formUrl = 'https://docs.google.com/forms/d/1vChM_H3-KlrlvSOJPKdSpv4W-80Uv-ObKQKGv99aQUw/viewform';
+    const nombre = encodeURIComponent(currentStudent.name);
+    const cedula = encodeURIComponent(currentStudent.ci);
+    
+    // Abrir en nueva pestaña
+    window.open(formUrl, '_blank');
+    
+    // Guardar localmente por seguridad
     const data = {
         name: currentStudent.name,
         ci: currentStudent.ci,
-        exportTime: new Date().toISOString(),
-        timeLeft: timeLeft,
-        answers: {},
-        examVersion: 'v2'
+        fecha: fecha,
+        hora: hora,
+        score: score,
+        smCorrect: smCorrect,
+        vfCorrect: vfCorrect,
+        percent: percent
     };
     
-    // Recolectar respuestas sección 1 (15 preguntas)
-    for (let i = 0; i < 15; i++) {
-        const sel = document.querySelector(`input[name="q1_${i}"]:checked`);
-        if (sel) data.answers[`q1_${i}`] = parseInt(sel.value);
-    }
-    // Recolectar respuestas sección 2 (15 preguntas)
-    for (let i = 0; i < 15; i++) {
-        const sel = document.querySelector(`input[name="q2_${i}"]:checked`);
-        if (sel) data.answers[`q2_${i}`] = sel.value;
-    }
+    // Guardar en localStorage del estudiante
+    let misResultados = JSON.parse(localStorage.getItem('misResultados') || '[]');
+    misResultados.push(data);
+    localStorage.setItem('misResultados', JSON.stringify(misResultados));
     
-    // Descargar como archivo JSON
-    const jsonStr = JSON.stringify(data, null, 2);
-    const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Examen_${currentStudent.ci}_${currentStudent.name.replace(/ /g, '_')}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    
-    alert('¡Examen exportado como archivo JSON!\n\nEnvíe este archivo al docente para registrar su examen.');
+    alert(`Examen completado!\n\nNota: ${score}/30 (${percent}%)\n\nSe abrio el formulario del docente.\nPor favor complete los datos y.envie.\n\nSus resultados tambien estan guardados aqui.`);
 }
 
 // Guardar examen activo
