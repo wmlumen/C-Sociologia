@@ -112,7 +112,7 @@
     <div class="text-center mb-5">
         <div class="font-bold text-xl tracking-tighter mb-1 titulo-institucional">INSTITUTO SUPERIOR <span class="text-red-600">CENTURIA</span></div>
         <h1 class="text-lg font-bold mt-3">Examen - Sociología</h1>
-        <p class="text-sm text-gray-500 italic">30 Preguntas | Selección Múltiple, V/F y Desarrollo</p>
+        <p class="text-sm text-gray-italic">30 Preguntas | 15 Selección Múltiple + 15 V/F</p>
     </div>
     <div class="space-y-3">
         <div>
@@ -145,7 +145,7 @@
                     <p id="active-count" class="text-xl font-bold text-red-600">0</p>
                 </div>
                 <div class="bg-green-100 px-3 py-2 rounded-lg text-center">
-                    <p class="text-xs text-gray-500 uppercase">Entregados</p>
+                    <p class="text-xs text-gray-500 uppercase">Registrados</p>
                     <p id="total-count" class="text-xl font-bold text-green-600">0</p>
                 </div>
                 <div class="bg-blue-100 px-3 py-2 rounded-lg text-center">
@@ -175,12 +175,21 @@
 
         <!-- Panel de Importación -->
         <div id="import-panel" class="hidden bg-blue-50 p-3 rounded-lg mb-4 border border-blue-200">
-            <h3 class="text-sm font-bold text-blue-700 mb-2">Importar Resultados de Estudiante</h3>
-            <p class="text-xs text-gray-600 mb-2">Pida al estudiante que exporte sus respuestas y pegue el código aquí:</p>
-            <textarea id="import-data" class="w-full border rounded p-2 text-xs" rows="3" placeholder="Pegue el código de exportación del estudiante..."></textarea>
-            <button onclick="importStudentData()" class="bg-blue-600 text-white px-4 py-1 rounded text-xs mt-2 hover:bg-blue-700">
-                Importar
-            </button>
+            <h3 class="text-sm font-bold text-blue-700 mb-2">Importar Resultados de Estudiantes</h3>
+            <p class="text-xs text-gray-600 mb-2">Importe el archivo JSON que le envía el estudiante:</p>
+            <input type="file" id="import-file" accept=".json" class="text-xs mb-2" multiple>
+            <div class="flex gap-2">
+                <button onclick="importStudentJSON()" class="bg-blue-600 text-white px-4 py-1 rounded text-xs hover:bg-blue-700">
+                    Importar Archivo(s)
+                </button>
+                <button onclick="limpiarResultados()" class="bg-red-500 text-white px-4 py-1 rounded text-xs hover:bg-red-600">
+                    Limpiar Todo
+                </button>
+                <button onclick="exportarGestion()" class="bg-green-600 text-white px-4 py-1 rounded text-xs hover:bg-green-700">
+                    Descargar Gestión
+                </button>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Puede seleccionar varios archivos a la vez</p>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -553,10 +562,10 @@ function updateTimer() {
 
 function calcularPuntaje() {
     let score = 0;
-    let s1Correct = 0, s2Correct = 0, s3Correct = 0;
+    let s1Correct = 0, s2Correct = 0;
     
-    // Sección 1: Selección múltiple
-    for (let i = 0; i < 10; i++) {
+    // Sección 1: Selección múltiple (15 preguntas)
+    for (let i = 0; i < 15; i++) {
         const selected = document.querySelector(`input[name="q1_${i}"]:checked`);
         if (selected && parseInt(selected.value) === examData.section1[i].answer) {
             score++;
@@ -564,8 +573,8 @@ function calcularPuntaje() {
         }
     }
     
-    // Sección 2: V/F
-    for (let i = 0; i < 10; i++) {
+    // Sección 2: V/F (15 preguntas)
+    for (let i = 0; i < 15; i++) {
         const selected = document.querySelector(`input[name="q2_${i}"]:checked`);
         if (selected) {
             const userAnswer = selected.value === 'V';
@@ -576,21 +585,11 @@ function calcularPuntaje() {
         }
     }
     
-    // Sección 3: Desarrollo
-    for (let i = 0; i < 10; i++) {
-        const text = document.querySelector(`textarea[name="q3_${i}"]`)?.value?.trim();
-        if (text && text.length > 15) {
-            score++;
-            s3Correct++;
-        }
-    }
-    
     return {
         score: Math.min(score, 30),
         summary: [
-            { section: 'I. Selección Múltiple', correct: s1Correct, total: 10 },
-            { section: 'II. Verdadero o Falso', correct: s2Correct, total: 10 },
-            { section: 'III. Desarrollo', correct: s3Correct, total: 10 }
+            { section: 'I. Selección Múltiple', correct: s1Correct, total: 15 },
+            { section: 'II. Verdadero o Falso', correct: s2Correct, total: 15 }
         ]
     };
 }
@@ -627,6 +626,17 @@ function finalizarExamen() {
 }
 
 function guardarResultado(result) {
+    // Recolectar respuestas para análisis del docente
+    const rawAnswers = {};
+    for (let i = 0; i < 15; i++) {
+        const sel = document.querySelector(`input[name="q1_${i}"]:checked`);
+        if (sel) rawAnswers[`q1_${i}`] = parseInt(sel.value);
+    }
+    for (let i = 0; i < 15; i++) {
+        const sel = document.querySelector(`input[name="q2_${i}"]:checked`);
+        if (sel) rawAnswers[`q2_${i}`] = sel.value;
+    }
+    
     const record = {
         name: currentStudent.name,
         ci: currentStudent.ci,
@@ -634,7 +644,9 @@ function guardarResultado(result) {
         attempt: currentStudent.attempts,
         date: getDate(),
         time: getTime(),
-        datetime: new Date().toISOString()
+        datetime: new Date().toISOString(),
+        rawAnswers: rawAnswers,
+        summary: result.summary
     };
     
     let allResults = JSON.parse(localStorage.getItem('socioResults') || '[]');
@@ -1060,33 +1072,32 @@ function exportStudentAnswers() {
         ci: currentStudent.ci,
         exportTime: new Date().toISOString(),
         timeLeft: timeLeft,
-        answers: {}
+        answers: {},
+        examVersion: 'v2'
     };
     
-    // Recolectar respuestas sección 1
-    for (let i = 0; i < 10; i++) {
+    // Recolectar respuestas sección 1 (15 preguntas)
+    for (let i = 0; i < 15; i++) {
         const sel = document.querySelector(`input[name="q1_${i}"]:checked`);
         if (sel) data.answers[`q1_${i}`] = parseInt(sel.value);
     }
-    // Recolectar respuestas sección 2
-    for (let i = 0; i < 10; i++) {
+    // Recolectar respuestas sección 2 (15 preguntas)
+    for (let i = 0; i < 15; i++) {
         const sel = document.querySelector(`input[name="q2_${i}"]:checked`);
         if (sel) data.answers[`q2_${i}`] = sel.value;
     }
-    // Recolectar respuestas sección 3
-    for (let i = 0; i < 10; i++) {
-        const txt = document.querySelector(`textarea[name="q3_${i}"]`);
-        if (txt) data.answers[`q3_${i}`] = txt.value;
-    }
     
-    const encoded = btoa(JSON.stringify(data));
+    // Descargar como archivo JSON
+    const jsonStr = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Examen_${currentStudent.ci}_${currentStudent.name.replace(/ /g, '_')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
     
-    // Copiar al portapapeles
-    navigator.clipboard.writeText(encoded).then(() => {
-        alert('¡Código copiado al portapapeles!\n\nEnvíe este código al docente para que registre su examen.');
-    }).catch(() => {
-        prompt('Copie este código y envíelo al docente:', encoded);
-    });
+    alert('¡Examen exportado como archivo JSON!\n\nEnvíe este archivo al docente para registrar su examen.');
 }
 
 // Guardar examen activo
@@ -1170,81 +1181,141 @@ function toggleImportPanel() {
 }
 
 // Importar datos del estudiante
-function importStudentData() {
-    const dataStr = document.getElementById('import-data').value.trim();
-    if (!dataStr) {
-        alert('Pegue el código de exportación del estudiante');
+// Importar archivo JSON del estudiante
+function importStudentJSON() {
+    const input = document.getElementById('import-file');
+    const files = input.files;
+    
+    if (files.length === 0) {
+        alert('Seleccione al menos un archivo JSON');
         return;
     }
     
-    try {
-        const data = JSON.parse(atob(dataStr));
-        
-        // Guardar como resultado
-        const result = {
-            name: data.name,
-            ci: data.ci,
-            score: 0,
-            attempt: 1,
-            date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-            time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-            datetime: new Date().toISOString(),
-            isImport: true,
-            rawAnswers: data.answers
-        };
-        
-        // Calcular puntaje
-        let score = 0, s1 = 0, s2 = 0, s3 = 0;
-        
-        // Sección 1
-        for (let i = 0; i < 10; i++) {
-            const ans = data.answers[`q1_${i}`];
-            if (ans !== undefined && ans === examData.section1[i].answer) {
-                score++; s1++;
-            }
-        }
-        // Sección 2
-        for (let i = 0; i < 10; i++) {
-            const ans = data.answers[`q2_${i}`];
-            if (ans) {
-                const isTrue = ans === 'V';
-                if (isTrue === examData.section2[i].isTrue) {
-                    score++; s2++;
+    let importados = 0;
+    let errores = 0;
+    
+    Array.from(files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                importarExamen(data);
+                importados++;
+                
+                if (importados + errores === files.length) {
+                    alert(`Importación completada:\n✓ ${importados} exámenes\n✗ ${errores} errores`);
+                    document.getElementById('import-file').value = '';
+                    cargarDatosProfesor();
                 }
+            } catch (err) {
+                errores++;
+                console.error('Error importando:', file.name, err);
             }
+        };
+        reader.readAsText(file);
+    });
+}
+
+function importarExamen(data) {
+    // Guardar como resultado
+    const result = {
+        name: data.name,
+        ci: data.ci,
+        score: 0,
+        attempt: 1,
+        date: new Date().toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+        time: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        datetime: new Date().toISOString(),
+        isImport: true,
+        rawAnswers: data.answers
+    };
+    
+    // Calcular puntaje para 15 preguntas cada sección
+    let score = 0, s1 = 0, s2 = 0;
+    
+    // Sección 1: Selección múltiple (15 preguntas)
+    for (let i = 0; i < 15; i++) {
+        const ans = data.answers[`q1_${i}`];
+        if (ans !== undefined && ans === examData.section1[i].answer) {
+            score++; s1++;
         }
-        // Sección 3
-        for (let i = 0; i < 10; i++) {
-            const txt = data.answers[`q3_${i}`];
-            if (txt && txt.trim().length > 15) {
-                score++; s3++;
-            }
-        }
-        
-        result.score = score;
-        result.summary = [
-            { section: 'I. Selección Múltiple', correct: s1, total: 10 },
-            { section: 'II. Verdadero o Falso', correct: s2, total: 10 },
-            { section: 'III. Desarrollo', correct: s3, total: 10 }
-        ];
-        
-        let allResults = JSON.parse(localStorage.getItem('socioResults') || '[]');
-        allResults.push(result);
-        localStorage.setItem('socioResults', JSON.stringify(allResults));
-        
-        // Limpiar examen activo
-        let activeExams = JSON.parse(localStorage.getItem('activeExams') || '[]');
-        activeExams = activeExams.filter(e => e.ci !== data.ci);
-        localStorage.setItem('activeExams', JSON.stringify(activeExams));
-        
-        alert(`Importado: ${data.name}\nPuntaje: ${score}/30`);
-        document.getElementById('import-data').value = '';
-        toggleImportPanel();
-        cargarDatosProfesor();
-        
-    } catch (e) {
-        alert('Código inválido. Solicite un nuevo código al estudiante.');
     }
+    // Sección 2: Verdadero/Falso (15 preguntas)
+    for (let i = 0; i < 15; i++) {
+        const ans = data.answers[`q2_${i}`];
+        if (ans) {
+            const isTrue = ans === 'V';
+            if (isTrue === examData.section2[i].isTrue) {
+                score++; s2++;
+            }
+        }
+    }
+    
+    result.score = score;
+    result.summary = [
+        { section: 'I. Selección Múltiple', correct: s1, total: 15 },
+        { section: 'II. Verdadero o Falso', correct: s2, total: 15 }
+    ];
+    
+    let allResults = JSON.parse(localStorage.getItem('socioResults') || '[]');
+    
+    // Verificar si ya existe para actualizar
+    const existingIdx = allResults.findIndex(r => r.ci === data.ci);
+    if (existingIdx >= 0) {
+        // Solo actualizar si la nueva nota es mejor
+        if (score > allResults[existingIdx].score) {
+            allResults[existingIdx] = result;
+        }
+    } else {
+        allResults.push(result);
+    }
+    
+    localStorage.setItem('socioResults', JSON.stringify(allResults));
+}
+
+// Limpiar todos los resultados
+function limpiarResultados() {
+    if (confirm('¿Está seguro de borrar todos los resultados?\nEsta acción no se puede deshacer.')) {
+        localStorage.removeItem('socioResults');
+        localStorage.removeItem('activeExams');
+        cargarDatosProfesor();
+        alert('Todos los resultados han sido eliminados.');
+    }
+}
+
+// Exportar gestión completa
+function exportarGestion() {
+    const allResults = JSON.parse(localStorage.getItem('socioResults') || '[]');
+    
+    if (allResults.length === 0) {
+        alert('No hay resultados para exportar');
+        return;
+    }
+    
+    const gestionData = {
+        exportDate: new Date().toISOString(),
+        totalAlumnos: allResults.length,
+        promedio: (allResults.reduce((sum, r) => sum + r.score, 0) / allResults.length).toFixed(2),
+        resultados: allResults.map(r => ({
+            nombre: r.name,
+            cedula: r.ci,
+            fecha: r.date,
+            hora: r.time,
+            nota: r.score,
+            porcentaje: ((r.score / 30) * 100).toFixed(0),
+            intento: r.attempt,
+            detalle: r.summary
+        }))
+    };
+    
+    const jsonStr = JSON.stringify(gestionData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Gestion_Examen_Sociologia_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 // Cargar estudiantes activos
