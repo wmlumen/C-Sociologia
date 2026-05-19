@@ -149,7 +149,7 @@
                     <p id="active-count" class="text-xl font-bold text-red-600">0</p>
                 </div>
                 <div class="bg-green-100 px-3 py-2 rounded-lg text-center">
-                    <p class="text-xs text-gray-500 uppercase">Registrados</p>
+                    <p class="text-xs text-gray-500 uppercase">Intentos</p>
                     <p id="total-count" class="text-xl font-bold text-green-600">0</p>
                 </div>
                 <div class="bg-blue-100 px-3 py-2 rounded-lg text-center">
@@ -748,12 +748,6 @@ function guardarResultado(result) {
     activeExams = activeExams.filter(e => e.ci !== record.ci);
     localStorage.setItem('activeExams', JSON.stringify(activeExams));
 
-    const kept = !previousBest || record.score >= previousBest.score;
-    if (!kept) {
-        return { kept, record, previousBest };
-    }
-
-    allResults = allResults.filter(r => r.ci !== record.ci);
     allResults.push(record);
     localStorage.setItem('socioResults', JSON.stringify(allResults));
 
@@ -782,7 +776,8 @@ function guardarResultado(result) {
             alert('El examen quedo guardado en este navegador, pero no se pudo enviar a Google Forms. Revise la conexion e intente nuevamente.');
         });
 
-    return { kept, record, previousBest };
+    const bestScore = Math.max(record.score, previousBest ? previousBest.score : 0);
+    return { record, previousBest, bestScore };
 }
 
 function descargarActa() {
@@ -862,13 +857,13 @@ function cargarDatosProfesor() {
 
 function verDetalleExamen(ci) {
     const allResults = JSON.parse(localStorage.getItem('socioResults') || '[]');
-    const studentResults = allResults.filter(x => x.ci === ci).sort((a, b) => b.score - a.score);
-    const bestResult = studentResults[0];
+    const studentResults = allResults.filter(x => x.ci === ci);
+    const bestResult = [...studentResults].sort((a, b) => b.score - a.score)[0];
     
     if (!bestResult) return;
     
     let attemptsHTML = '';
-    studentResults.forEach((r, idx) => {
+    [...studentResults].sort((a, b) => a.attempt - b.attempt).forEach((r, idx) => {
         const percent = ((r.score / 30) * 100).toFixed(0);
         attemptsHTML += `
             <div class="bg-white p-2 rounded border mb-1 flex justify-between items-center">
@@ -1362,18 +1357,7 @@ function importarExamen(data) {
     ];
     
     let allResults = JSON.parse(localStorage.getItem('socioResults') || '[]');
-    
-    // Verificar si ya existe para actualizar
-    const existingIdx = allResults.findIndex(r => r.ci === data.ci);
-    if (existingIdx >= 0) {
-        // Solo actualizar si la nueva nota es mejor
-        if (score > allResults[existingIdx].score) {
-            allResults[existingIdx] = result;
-        }
-    } else {
-        allResults.push(result);
-    }
-    
+    allResults.push(result);
     localStorage.setItem('socioResults', JSON.stringify(allResults));
 }
 
