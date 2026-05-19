@@ -1067,20 +1067,42 @@ function actualizarPanel() {
 
 // Exportar respuestas para enviar al docente
 function exportStudentAnswers() {
-    // Calcular puntaje
+    // Calcular puntaje y generar detalle
     let score = 0, smCorrect = 0, vfCorrect = 0;
+    let detalleSM = [];
+    let detalleVF = [];
     
+    // Sección 1: Selección múltiple
     for (let i = 0; i < 15; i++) {
         const sel = document.querySelector(`input[name="q1_${i}"]:checked`);
-        if (sel && parseInt(sel.value) === examData.section1[i].answer) {
-            score++; smCorrect++;
-        }
+        const userAns = sel ? parseInt(sel.value) : -1;
+        const correctAns = examData.section1[i].answer;
+        const isCorrect = userAns === correctAns;
+        if (isCorrect) { score++; smCorrect++; }
+        const opts = ['A', 'B', 'C', 'D'];
+        detalleSM.push({
+            num: i + 1,
+            pregunta: examData.section1[i].q.replace(/^\d+\.\s*/, ''),
+            respuesta: userAns >= 0 ? opts[userAns] : 'NR',
+            correcta: opts[correctAns],
+            esCorrecta: isCorrect
+        });
     }
+    
+    // Sección 2: Verdadero/Falso
     for (let i = 0; i < 15; i++) {
         const sel = document.querySelector(`input[name="q2_${i}"]:checked`);
-        if (sel && sel.value === (examData.section2[i].isTrue ? 'V' : 'F')) {
-            score++; vfCorrect++;
-        }
+        const userAns = sel ? sel.value : '';
+        const correctAns = examData.section2[i].isTrue ? 'V' : 'F';
+        const isCorrect = userAns === correctAns;
+        if (isCorrect) { score++; vfCorrect++; }
+        detalleVF.push({
+            num: i + 1,
+            pregunta: examData.section2[i].q.replace(/^\d+\.\s*/, ''),
+            respuesta: userAns || 'NR',
+            correcta: correctAns,
+            esCorrecta: isCorrect
+        });
     }
     
     const percent = ((score / 30) * 100).toFixed(0);
@@ -1088,15 +1110,35 @@ function exportStudentAnswers() {
     const fecha = now.toLocaleDateString('es-ES');
     const hora = now.toLocaleTimeString('es-ES');
     
-    // Abrir Google Forms con datos prellenados
-    const formUrl = 'https://docs.google.com/forms/d/1vChM_H3-KlrlvSOJPKdSpv4W-80Uv-ObKQKGv99aQUw/viewform';
-    const nombre = encodeURIComponent(currentStudent.name);
-    const cedula = encodeURIComponent(currentStudent.ci);
+    // Crear informe detallado
+    let informe = `=== EXAMEN SOCIOLOGIA ===\n`;
+    informe += `Estudiante: ${currentStudent.name}\n`;
+    informe += `Cedula: ${currentStudent.ci}\n`;
+    informe += `Fecha: ${fecha} ${hora}\n`;
+    informe += `Nota: ${score}/30 (${percent}%)\n\n`;
     
-    // Abrir en nueva pestaña
-    window.open(formUrl, '_blank');
+    informe += `--- SECCION I: SELECCION MULTIPLE (${smCorrect}/15) ---\n`;
+    detalleSM.forEach(d => {
+        informe += `${d.num}. ${d.esCorrecta ? '✓' : '✗'} ${d.pregunta.substring(0, 50)}...\n`;
+        informe += `   Tu respuesta: ${d.respuesta} | Correcta: ${d.correcta}\n`;
+    });
     
-    // Guardar localmente por seguridad
+    informe += `\n--- SECCION II: VERDADERO/FALSO (${vfCorrect}/15) ---\n`;
+    detalleVF.forEach(d => {
+        informe += `${d.num}. ${d.esCorrecta ? '✓' : '✗'} ${d.pregunta.substring(0, 50)}...\n`;
+        informe += `   Tu respuesta: ${d.respuesta} | Correcta: ${d.correcta}\n`;
+    });
+    
+    // Descargar informe
+    const blob = new Blob([informe], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Examen_${currentStudent.ci}_detallado.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    // Guardar resultado también en localStorage
     const data = {
         name: currentStudent.name,
         ci: currentStudent.ci,
@@ -1105,15 +1147,19 @@ function exportStudentAnswers() {
         score: score,
         smCorrect: smCorrect,
         vfCorrect: vfCorrect,
-        percent: percent
+        percent: percent,
+        detalleSM: detalleSM,
+        detalleVF: detalleVF
     };
     
-    // Guardar en localStorage del estudiante
     let misResultados = JSON.parse(localStorage.getItem('misResultados') || '[]');
     misResultados.push(data);
     localStorage.setItem('misResultados', JSON.stringify(misResultados));
     
-    alert(`Examen completado!\n\nNota: ${score}/30 (${percent}%)\n\nSe abrio el formulario del docente.\nPor favor complete los datos y.envie.\n\nSus resultados tambien estan guardados aqui.`);
+    // Abrir Google Forms para datos básicos
+    window.open('https://docs.google.com/forms/d/1vChM_H3-KlrlvSOJPKdSpv4W-80Uv-ObKQKGv99aQUw/viewform', '_blank');
+    
+    alert(`Examen completado!\n\nNota: ${score}/30 (${percent}%)\n\nSe descargó un archivo con las respuestas detalladas.\nTambién se abrió el formulario del docente para enviar los datos básicos.\n\nEl archivo descargado muestra pregunta por pregunta qué respondiste y cuál era la respuesta correcta.`);
 }
 
 // Guardar examen activo
