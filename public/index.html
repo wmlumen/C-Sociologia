@@ -7,6 +7,25 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <script>
+        // === CARGAR CONFIGURACIÓN DESDE DATOS_GENERALES.TXT ===
+        const CONFIG = {
+            docente: 'Christhian Keim',
+            cedulaDocente: '1340130',
+            cedulaPrueba: '99',
+            grupo: 'S026',
+            materia: 'Sociologia',
+            año: '2026',
+            fechaExamen: '19/05/2026',
+            tiempoLimite: 60,
+            intentosMaximos: 2,
+            puntajeTotal: 30,
+            puntajeAprobacion: 60,
+            linkGoogleForms: 'https://docs.google.com/forms/d/1vChM_H3-KlrlvSOJPKdSpv4W-80Uv-ObKQKGv99aQUw/viewform',
+            linkAsistencia: 'https://docs.google.com/spreadsheets/d/1mMd2UbVxCQqLz4IaMUX88CE-Ov6F4ndp1NjxE9m-pY4',
+            linkRespuestas: 'https://docs.google.com/spreadsheets/d/1isV0oyTbiSGAWB5DZuNUjU8R3fm8H6pnPxcp_eOHb5s'
+        };
+    </script>
     <style>
         :root {
             --color-primario: #2c5d3d;
@@ -109,7 +128,7 @@
 <body class="p-3 md:p-6 pt-10" oncontextmenu="return false;">
 
 <div class="fixed top-0 left-0 right-0 z-40 bg-green-900 text-white text-center text-xs py-2 shadow-md no-print">
-    Version V3 - 2026-05-19 20:46
+    Grupo: ${CONFIG.grupo} | ${CONFIG.materia} | Fecha: ${CONFIG.fechaExamen}
 </div>
 
 <div id="login-screen" class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-2xl mt-8 animate-fade">
@@ -128,7 +147,7 @@
             <input type="text" id="student-id" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-base focus:border-green-500 focus:outline-none" placeholder="Ej: 1234567">
         </div>
         <div class="bg-blue-50 p-2 rounded-lg text-xs text-blue-700">
-            <i class="fas fa-info-circle mr-1"></i> Examen: 60 minutos | 2 Intentos
+            <i class="fas fa-info-circle mr-1"></i> Examen: ${CONFIG.tiempoLimite} minutos | ${CONFIG.intentosMaximos} Intentos
         </div>
         <button onclick="startExam()" class="w-full btn-centuria py-3 rounded-lg hover:opacity-90 shadow-lg">
             COMENZAR
@@ -247,7 +266,7 @@
     </div>
     <div class="bg-green-50 p-2 rounded text-center border border-green-200">
         <label class="text-xs font-bold text-primary uppercase">Tiempo:</label>
-        <div id="timer" class="text-xl font-bold text-red-600 mt-1">60:00</div>
+        <div id="timer" class="text-xl font-bold text-red-600 mt-1">${CONFIG.tiempoLimite}:00</div>
     </div>
 </section>
 
@@ -307,7 +326,7 @@
                     <div class="border-t border-black pt-1 text-[10px]">Firma</div>
                 </div>
                 <div class="text-center w-32">
-                    <div class="border-t border-black pt-1 text-[10px]">Lic. Christhian Keim</div>
+                    <div class="border-t border-black pt-1 text-[10px]">Lic. ${CONFIG.docente}</div>
                 </div>
             </div>
         </div>
@@ -426,14 +445,14 @@ const examData = {
 };
 
 let currentStudent = { name: '', ci: '', isTest: false, attempts: 0 };
-let timeLeft = 3600;
+let timeLeft = CONFIG.tiempoLimite * 60;
 let timerInterval;
 let examInProgress = { name: '', ci: '', startTime: null, answers: {} };
 let examFinished = false;
 const MAX_ATTEMPTS = 2;
 
 const GOOGLE_FORM_CONFIG = {
-    actionUrl: 'https://docs.google.com/forms/d/e/1FAIpQLSc3Hwo9TfxRbKlD1PElbhq-OVoMsF_OalTxsvqS04RClsqwww/formResponse',
+    actionUrl: CONFIG.linkGoogleForms ? CONFIG.linkGoogleForms.replace('/viewform', '/formResponse') : '',
     viewUrl: 'https://forms.gle/85XwZKndrapCMPB57',
     entries: {
         name: 'entry.326235561',
@@ -538,12 +557,12 @@ function startExam() {
     
     currentStudent = { name, ci, attempts: 0 };
     
-    if (ci === '1340130') {
+    if (ci === CONFIG.cedulaDocente) {
         showTeacherPanel();
         return;
     }
     
-    if (ci === '99') {
+    if (ci === CONFIG.cedulaPrueba) {
         currentStudent.isTest = true;
     }
     
@@ -1090,7 +1109,7 @@ function exportStudentPDF(ci) {
         
         <div class="footer">
             <div class="firma">Firma del Estudiante</div>
-            <div class="firma">Lic. Christhian Keim<br>Docente</div>
+            <div class="firma">Lic. ${CONFIG.docente}<br>Docente</div>
         </div>
     </body>
     </html>
