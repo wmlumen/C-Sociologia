@@ -667,6 +667,58 @@ function calcularPuntaje() {
 
 function finalizarExamen() {
     if (examFinished) return;
+    
+    // Verificar preguntas sin responder
+    const sinResponder = verificarPreguntasSinResponder();
+    const totalSinResponder = sinResponder.length;
+    
+    if (totalSinResponder > 0) {
+        // Mostrar mensaje con las preguntas sin responder
+        let mensaje = `ATENCIÓN: Tiene ${totalSinResponder} pregunta(s) sin responder:\n\n`;
+        
+        // Marcar las preguntas sin responder en rojo
+        sinResponder.forEach(tipo => {
+            mensaje += `- ${tipo}\n`;
+            // Resaltar visualmente las preguntas sin responder
+            if (tipo.includes('Sección I')) {
+                // Marcar preguntas de selección múltiple sin responder
+                const container = document.getElementById('section1-questions');
+                const preguntas = container.querySelectorAll('.pregunta-card');
+                preguntas.forEach((preg, idx) => {
+                    const name = `q1_${idx}`;
+                    const checked = document.querySelector(`input[name="${name}"]:checked`);
+                    if (!checked) {
+                        preg.classList.add('border-red-500', 'bg-red-50');
+                        preg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+            } else if (tipo.includes('Sección II')) {
+                // Marcar preguntas de V/F sin responder
+                const container = document.getElementById('section2-questions');
+                const preguntas = container.querySelectorAll('.pregunta-card');
+                preguntas.forEach((preg, idx) => {
+                    const name = `q2_${idx}`;
+                    const checked = document.querySelector(`input[name="${name}"]:checked`);
+                    if (!checked) {
+                        preg.classList.add('border-red-500', 'bg-red-50');
+                        preg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                });
+            }
+        });
+        
+        mensaje += `\n¿ Desea entregar de todas formas ?`;
+        
+        const confirmar = confirm(mensaje);
+        
+        if (!confirmar) {
+            // El estudiante canceló, puede seguir respondiendo
+            examFinished = false;
+            return;
+        }
+        // Si confirma, continúa con la entrega
+    }
+    
     examFinished = true;
     clearInterval(timerInterval);
     
@@ -702,6 +754,31 @@ function finalizarExamen() {
 
     const note = `Intento ${currentStudent.attempts} registrado. Se guardan todos los intentos y el docente vera como mejor puntaje ${saveState.bestScore}/30. Intentos restantes: ${remainingAttempts}.`;
     document.getElementById('result-note').textContent = note;
+}
+
+// Función para verificar preguntas sin responder
+function verificarPreguntasSinResponder() {
+    const sinResponder = [];
+    
+    // Verificar Sección I - Selección Múltiple
+    for (let i = 0; i < 15; i++) {
+        const name = `q1_${i}`;
+        const checked = document.querySelector(`input[name="${name}"]:checked`);
+        if (!checked) {
+            sinResponder.push(`Sección I - Pregunta ${i + 1}`);
+        }
+    }
+    
+    // Verificar Sección II - Verdadero/Falso
+    for (let i = 0; i < 15; i++) {
+        const name = `q2_${i}`;
+        const checked = document.querySelector(`input[name="${name}"]:checked`);
+        if (!checked) {
+            sinResponder.push(`Sección II - Pregunta ${i + 1}`);
+        }
+    }
+    
+    return sinResponder;
 }
 
 function recolectarRespuestas() {
