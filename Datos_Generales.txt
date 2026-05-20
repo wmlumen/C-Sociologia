@@ -1,7 +1,0 @@
-Name.docente;Christhian Keim
-cedula.docente;1340130
-acceder.sin.cedula:99
-grupo;S026
-fecha.examen:19/05/2026
-link.listado.asistencia;https://docs.google.com/spreadsheets/d/1mMd2UbVxCQqLz4IaMUX88CE-Ov6F4ndp1NjxE9m-pY4/edit?gid=1870020423#gid=1870020423
-link.listado.respuestas;https://docs.google.com/spreadsheets/d/1isV0oyTbiSGAWB5DZuNUjU8R3fm8H6pnPxcp_eOHb5s/edit?gid=1269339761#gid=1269339761
