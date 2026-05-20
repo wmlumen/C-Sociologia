@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validación de Alumno - Instituto Centuria</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --color-primario: #2c5d3d;
+            --color-acento: #c5a059;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap');
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #1a3a2a 0%, #2c5d3d 50%, #1a3a2a 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .titulo-institucional {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+        }
+        
+        .header-gradient {
+            background: linear-gradient(135deg, #2c5d3d 0%, #3d7a52 100%);
+        }
+        
+        .btn-validar {
+            background: linear-gradient(135deg, #2c5d3d 0%, #3d7a52 100%);
+            transition: all 0.3s;
+        }
+        
+        .btn-validar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(44, 93, 61, 0.4);
+        }
+        
+        .habilitado {
+            background: #f0fdf4;
+            border-left: 4px solid #22c55e;
+        }
+        
+        .consulta {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .no-habilitado {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card max-w-lg w-full">
+        <div class="header-gradient p-6 text-center">
+            <div class="titulo-institucional text-2xl text-white mb-1">
+                INSTITUTO <span class="text-red-400">CENTURIA</span>
+            </div>
+            <h1 class="text-white text-xl font-bold">Validación de Alumno</h1>
+            <p class="text-green-200 text-sm">Examen de Sociología - Grupo S026</p>
+        </div>
+        
+        <div class="p-6">
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-600 mb-2">Ingrese su Cédula de Identidad</label>
+                <input type="text" id="cedula-input" 
+                    class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-lg focus:border-green-500 focus:outline-none text-center"
+                    placeholder="Ej: 12345678">
+            </div>
+            
+            <button onclick="validarAlumno()" 
+                class="btn-validar w-full text-white font-bold py-3 rounded-xl">
+                <i class="fas fa-check-circle mr-2"></i> Validar
+            </button>
+            
+            <div id="resultado" class="mt-6 hidden">
+                <!-- Resultado se muestra aquí -->
+            </div>
+            
+            <div class="mt-6 text-center text-xs text-gray-400">
+                <p>Verifique sus datos antes de continuar</p>
+            </div>
+        </div>
+        
+        <div class="bg-gray-50 p-4 text-center border-t">
+            <a href="index.html" class="text-green-600 text-sm hover:underline">
+                <i class="fas fa-home mr-1"></i> Volver al inicio
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // === LISTADO DE ALUMNOS ===
+        const alumnos = [
+            // INGENIERÍA COMERCIAL - HABILITADOS
+            { carrera: "IC", cedula: "4245416", nombre: "JORGE MIGUEL AMARILLA FERNANDEZ", factura: "INV-2026-0001", estado: "*" },
+            { carrera: "IC", cedula: "4745870", nombre: "SUSANA BEATRIZ ESPINOLA RAMIREZ", factura: "INV-2026-0002", estado: "*" },
+            { carrera: "IC", cedula: "12345678", nombre: "JUAN PABLO PEREZ GONZALEZ", factura: "INV-2026-0003", estado: "*" },
+            { carrera: "IC", cedula: "98765432", nombre: "MARIA JOSE LOPEZ RIOS", factura: "INV-2026-0004", estado: "*" },
+            { carrera: "IC", cedula: "55667788", nombre: "CARLOS EDUARDO RODRIGUEZ SOLIS", factura: "INV-2026-0005", estado: "*" },
+            { carrera: "IC", cedula: "11223344", nombre: "ANA LUCIA FERNANDEZ BRITEZ", factura: "INV-2026-0006", estado: "*" },
+            { carrera: "IC", cedula: "99887766", nombre: "LUCAS MATIAS ACOSTA ORTIZ", factura: "INV-2026-0007", estado: "*" },
+            { carrera: "IC", cedula: "44556677", nombre: "ROBERTO CARLOS BENITEZ VERON", factura: "INV-2026-0008", estado: "*" },
+            { carrera: "IC", cedula: "66778899", nombre: "PATRICIA SOLEDAD GOMEZ CUEVAS", factura: "INV-2026-0009", estado: "*" },
+            { carrera: "IC", cedula: "22334455", nombre: "JESICA MARIELA AGUERO FARIÑA", factura: "INV-2026-0010", estado: "*" },
+            { carrera: "IC", cedula: "77889900", nombre: "MARCOS ANTONIO DA SILVA RAMIREZ", factura: "INV-2026-0011", estado: "*" },
+            { carrera: "IC", cedula: "33445566", nombre: "CLAUDIA VANESA ESCOBAR CARDOZO", factura: "INV-2026-0012", estado: "*" },
+            { carrera: "IC", cedula: "88990011", nombre: "WALTER DANIEL GONZALEZ LUNA", factura: "INV-2026-0013", estado: "*" },
+            { carrera: "IC", cedula: "99001122", nombre: "OMAR ENRIQUE NUÑEZ ROTELA", factura: "INV-2026-0015", estado: "*" },
+            
+            // CONTABILIDAD - HABILITADOS
+            { carrera: "CN", cedula: "66778899", nombre: "CARMEN LUCIA BENITEZ FERNANDEZ", factura: "INV-2026-0102", estado: "*" },
+            { carrera: "CN", cedula: "77889900", nombre: "LORENA BEATRIZ ROMERO ESCOBAR", factura: "INV-2026-0103", estado: "*" },
+            { carrera: "CN", cedula: "88990011", nombre: "SILVIA PATRICIA GUTIERREZ RUIZ", factura: "INV-2026-0104", estado: "*" },
+            { carrera: "CN", cedula: "99001122", nombre: "GLORIA MARISOL FLORES CACERES", factura: "INV-2026-0105", estado: "*" },
+            { carrera: "CN", cedula: "11223344", nombre: "MONICA YOHANA ALVARENGA VERA", factura: "INV-2026-0106", estado: "*" },
+            { carrera: "CN", cedula: "22334455", nombre: "SANDRA LILIANA GIMENEZ FRANCO", factura: "INV-2026-0107", estado: "*" },
+            { carrera: "CN", cedula: "33445566", nombre: "ANDREA CAROLINA OJEDA MOREL", factura: "INV-2026-0108", estado: "*" },
+            { carrera: "CN", cedula: "44556677", nombre: "CONCEPCION ELENA ORTIGOZA RUIZ", factura: "INV-2026-0109", estado: "*" },
+            { carrera: "CN", cedula: "55667788", nombre: "CELIA ROSA BRITEZ FARIÑA", factura: "INV-2026-0110", estado: "*" },
+            { carrera: "CN", cedula: "66778899", nombre: "FLORENCIA MARIA GONZALEZ SOSA", factura: "INV-2026-0111", estado: "*" },
+            { carrera: "CN", cedula: "77889900", nombre: "ELVIRA TERESA RAMIREZ AQUINO", factura: "INV-2026-0112", estado: "*" },
+            { carrera: "CN", cedula: "88990011", nombre: "SARA ISABEL VERA LOPEZ", factura: "INV-2026-0113", estado: "*" },
+            { carrera: "CN", cedula: "99001122", nombre: "LIDIA MERCEDES COLMAN MORA", factura: "INV-2026-0114", estado: "*" },
+            { carrera: "CN", cedula: "10111213", nombre: "MARGARITA ROSA DELGADO ARCE", factura: "INV-2026-0115", estado: "*" },
+            
+            // CONSULTA (NO HABILITADOS)
+            { carrera: "IC", cedula: "12345679", nombre: "PEDRO JOAQUIN FERREIRA GARCIA", factura: "consulta", estado: "consulta" },
+            { carrera: "CN", cedula: "98765431", nombre: "MARIA ELENA CABRERA NUÑEZ", factura: "consulta", estado: "consulta" },
+            { carrera: "IC", cedula: "55556666", nombre: "JOSE LUIS FERNANDEZ SANCHEZ", factura: "consulta", estado: "consulta" },
+            { carrera: "CN", cedula: "77778888", nombre: "LUZ MARINA RAMIREZ MOREL", factura: "consulta", estado: "consulta" },
+            { carrera: "IC", cedula: "33334444", nombre: "RAUL ALEJANDRO GONZALEZ TORRES", factura: "consulta", estado: "consulta" }
+        ];
+        
+        function validarAlumno() {
+            const cedula = document.getElementById('cedula-input').value.trim();
+            const resultado = document.getElementById('resultado');
+            
+            if (!cedula) {
+                alert('Por favor ingrese su cédula');
+                return;
+            }
+            
+            const alumno = alumnos.find(a => a.cedula === cedula);
+            
+            if (!alumno) {
+                resultado.className = 'mt-6 p-4 rounded-lg no-habilitado';
+                resultado.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-times-circle text-4xl text-red-500 mb-3"></i>
+                        <h3 class="font-bold text-lg text-red-700">Cédula no encontrada</h3>
+                        <p class="text-sm text-gray-600 mt-2">Su cédula no está registrada en el listado de exámenes.</p>
+                        <p class="text-xs text-gray-500 mt-1">Contacte al docente para verificar su situación.</p>
+                    </div>
+                `;
+                resultado.classList.remove('hidden');
+                return;
+            }
+            
+            if (alumno.estado === '*') {
+                // HABILITADO - Redireccionar al examen
+                resultado.className = 'mt-6 p-4 rounded-lg habilitado';
+                resultado.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-check-circle text-4xl text-green-500 mb-3"></i>
+                        <h3 class="font-bold text-lg text-green-700">¡Está habilitado para rendir!</h3>
+                        <p class="text-sm text-gray-600 mt-2">${alumno.nombre}</p>
+                        <p class="text-xs text-gray-500">Carrera: ${alumno.carrera === 'IC' ? 'Ingeniería Comercial' : 'Contabilidad'} | Factura: ${alumno.factura}</p>
+                        <a href="index.html" class="inline-block mt-4 bg-green-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-green-700">
+                            <i class="fas fa-pencil-alt mr-2"></i> Ir al Examen
+                        </a>
+                    </div>
+                `;
+            } else if (alumno.estado === 'consulta') {
+                // SOLO CONSULTA - Redireccionar a consulta
+                resultado.className = 'mt-6 p-4 rounded-lg consulta';
+                resultado.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-search text-4xl text-amber-500 mb-3"></i>
+                        <h3 class="font-bold text-lg text-amber-700">Consultar Resultados</h3>
+                        <p class="text-sm text-gray-600 mt-2">${alumno.nombre}</p>
+                        <p class="text-xs text-gray-500">No está habilitado para rendir el examen.</p>
+                        <a href="consultar.html" class="inline-block mt-4 bg-amber-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-amber-700">
+                            <i class="fas fa-search mr-2"></i> Consultar mis Resultados
+                        </a>
+                    </div>
+                `;
+            }
+            
+            resultado.classList.remove('hidden');
+        }
+        
+        // Permitir buscar con Enter
+        document.getElementById('cedula-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                validarAlumno();
+            }
+        });
+    </script>
+
+</body>
+</html>

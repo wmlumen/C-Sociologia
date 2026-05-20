@@ -138,6 +138,12 @@
         <p class="text-sm text-gray-italic">30 Preguntas | 15 Selección Múltiple + 15 V/F</p>
     </div>
     <div class="space-y-3">
+        <div class="bg-yellow-50 p-3 rounded-lg border border-yellow-200 mb-4">
+            <p class="text-sm text-yellow-800 text-center">
+                <i class="fas fa-user-check mr-2"></i>
+                ¿Es su primera vez? <a href="validar.html" class="font-bold underline">Validar aquí</a>
+            </p>
+        </div>
         <div>
             <label class="block text-xs font-bold uppercase text-gray-400 mb-1">Nombre y Apellido Completos</label>
             <input type="text" id="student-name" class="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-base focus:border-green-500 focus:outline-none" placeholder="Ej: Juan Pérez">
@@ -152,9 +158,12 @@
         <button onclick="startExam()" class="w-full btn-centuria py-3 rounded-lg hover:opacity-90 shadow-lg">
             COMENZAR
         </button>
-        <div class="mt-4 text-center">
-            <a href="consultar.html" class="text-green-600 text-sm hover:underline">
+        <div class="mt-4 text-center space-y-2">
+            <a href="consultar.html" class="text-green-600 text-sm hover:underline block">
                 <i class="fas fa-search mr-1"></i> Consultar mis resultados
+            </a>
+            <a href="validar.html" class="text-gray-500 text-xs hover:underline block">
+                <i class="fas fa-check-circle mr-1"></i> Validar mi habilitación
             </a>
         </div>
     </div>
