@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Docente Unificado - Examen Sociologia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --green: #2c5d3d;
+            --gold: #c5a059;
+            --ink: #1f2937;
+        }
+
+        body {
+            color: var(--ink);
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f3f4f6;
+        }
+
+        .brand-band {
+            background: var(--green);
+        }
+
+        .tabular {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .print-area {
+            display: none;
+        }
+
+        .acta-page {
+            page-break-after: always;
+            min-height: 100vh;
+            padding: 28px;
+            background: white;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .print-area {
+                display: block;
+            }
+
+            .screen-area {
+                display: none !important;
+            }
+
+            .acta-page {
+                page-break-after: always;
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="lock-screen" class="min-h-screen flex items-center justify-center bg-gray-100 p-4 no-print">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-sm border-t-4" style="border-color: var(--green);">
+        <div class="text-center mb-5">
+            <div class="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-2xl" style="background: var(--green);">🔒</div>
+            <h1 class="text-xl font-bold text-green-900">Panel del Docente</h1>
+            <p class="text-xs text-gray-500 mt-1">Ingrese la clave para consultar asistencia, puntajes, informe y actas.</p>
+        </div>
+        <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Clave</label>
+        <input id="teacher-pin" type="password" class="w-full border rounded px-3 py-2 text-center text-lg tracking-widest" placeholder="******">
+        <button id="unlock-btn" class="w-full mt-3 bg-green-800 text-white rounded px-4 py-2 font-bold">Ingresar</button>
+        <p id="lock-error" class="hidden text-xs text-red-600 mt-3 text-center">Clave incorrecta.</p>
+    </div>
+</div>
+
+<div id="teacher-app" class="screen-area hidden">
+    <header class="brand-band text-white no-print">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+                <p class="text-xs uppercase tracking-[0.25em] opacity-80">Instituto Superior Centuria</p>
+                <h1 class="text-2xl font-bold">Panel Docente Unificado - Examen Sociologia</h1>
+                <p class="text-xs opacity-85 mt-1">Asistencia, puntajes, informe generado y actas en un solo HTML.</p>
+            </div>
+            <div class="text-xs md:text-right opacity-90">
+                <p>Version Panel V2</p>
+                <p id="generated-at"></p>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 space-y-4">
+        <section class="bg-white rounded-lg shadow p-4 no-print">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div class="border rounded-lg p-3">
+                    <h2 class="font-bold text-sm text-green-800 mb-2">1. Asistencia</h2>
+                    <p class="text-xs text-gray-500 mb-2">Cargue `asistencia.txt` o un CSV/TSV con Nombre, Cedula y Carrera.</p>
+                    <input id="attendance-file" type="file" accept=".txt,.csv,.tsv" class="text-sm w-full">
+                    <button id="load-sample-attendance" class="mt-2 text-xs text-green-700 hover:underline">Intentar leer asistencia.txt local</button>
+                </div>
+
+                <div class="border rounded-lg p-3 space-y-3">
+                    <h2 class="font-bold text-sm text-green-800 flex items-center gap-1">
+                        <span>📊</span> 2. Puntajes
+                    </h2>
+                    <p class="text-xs text-gray-500">Cargue respuestas desde archivos locales (Excel, CSV, JSON) o desde una URL pública.</p>
+                    
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-bold uppercase text-gray-400">Archivo Local (Excel/CSV/JSON)</label>
+                        <input id="scores-file" type="file" accept=".txt,.csv,.tsv,.json,.xls,.xlsx" class="text-xs w-full file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100 cursor-pointer">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-bold uppercase text-gray-400">Dirección / URL Pública</label>
+                        <div class="flex gap-1">
+                            <input id="scores-url" type="url" placeholder="Pegar URL (Google Sheets, Excel, CSV...)" class="w-full border rounded px-2 py-1 text-xs focus:ring-1 focus:ring-green-500 outline-none">
+                            <button id="load-scores-url" class="bg-green-800 hover:bg-green-700 text-white font-bold text-xs px-2.5 py-1 rounded transition-colors whitespace-nowrap">Cargar URL</button>
+                        </div>
+                    </div>
+
+                    <div class="pt-1 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100">
+                        <button id="load-google-sheet" class="text-xs text-green-700 hover:underline flex items-center gap-0.5">
+                            <span>🟢</span> Sheet Predeterminado
+                        </button>
+                        <button id="load-local-results" class="text-xs text-green-700 hover:underline flex items-center gap-0.5">
+                            <span>💻</span> Resultados Locales
+                        </button>
+                    </div>
+                    <p id="sheet-status" class="text-xs text-gray-500 mt-1"></p>
+                </div>
+
+                <div class="border rounded-lg p-3">
+                    <h2 class="font-bold text-sm text-green-800 mb-2">3. Acciones</h2>
+                    <div class="flex flex-wrap gap-2">
+                        <button id="build-report" class="bg-green-800 text-white px-3 py-2 rounded text-sm">Generar informe</button>
+                        <button id="print-report" class="bg-gray-700 text-white px-3 py-2 rounded text-sm">Imprimir informe</button>
+                        <button id="print-actas" class="bg-red-700 text-white px-3 py-2 rounded text-sm">Actas</button>
+                        <button id="export-excel" class="bg-green-700 hover:bg-green-600 text-white px-3 py-2 rounded text-sm transition-colors">Exportar Excel</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-lg shadow p-4">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div class="border rounded-lg p-3">
+                    <p class="text-xs text-gray-500 uppercase">Alumnos</p>
+                    <p id="stat-students" class="text-2xl font-bold tabular">0</p>
+                </div>
+                <div class="border rounded-lg p-3">
+                    <p class="text-xs text-gray-500 uppercase">Con puntaje</p>
+                    <p id="stat-scored" class="text-2xl font-bold tabular">0</p>
+                </div>
+                <div class="border rounded-lg p-3">
+                    <p class="text-xs text-gray-500 uppercase">Intentos</p>
+                    <p id="stat-attempts" class="text-2xl font-bold tabular">0</p>
+                </div>
+                <div class="border rounded-lg p-3">
+                    <p class="text-xs text-gray-500 uppercase">Promedio</p>
+                    <p id="stat-average" class="text-2xl font-bold tabular">-</p>
+                </div>
+                <div class="border rounded-lg p-3">
+                    <p class="text-xs text-gray-500 uppercase">Actas</p>
+                    <p id="stat-actas" class="text-2xl font-bold tabular">0</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="bg-white rounded-lg shadow p-4 no-print">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Carrera</label>
+                    <select id="career-filter" class="w-full border rounded px-3 py-2 text-sm">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Estado</label>
+                    <select id="status-filter" class="w-full border rounded px-3 py-2 text-sm">
+                        <option value="">Todos</option>
+                        <option value="scored">Con puntaje</option>
+                        <option value="missing">Sin puntaje</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Buscar</label>
+                    <input id="search-box" type="search" class="w-full border rounded px-3 py-2 text-sm" placeholder="Cedula o nombre">
+                </div>
+            </div>
+        </section>
+
+        <section id="report-output" class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="p-4 border-b">
+                <h2 class="font-bold text-green-900">Asistencia y puntajes</h2>
+                <p class="text-xs text-gray-500">Ordenado por carrera, cedula y nombre. La columna mejor puntaje usa la nota mas alta del alumno.</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100 text-xs uppercase text-gray-600">
+                        <tr>
+                            <th class="text-left p-2">Carrera</th>
+                            <th class="text-left p-2">Cedula</th>
+                            <th class="text-left p-2">Nombre</th>
+                            <th class="text-center p-2">Intento 1</th>
+                            <th class="text-center p-2">Intento 2</th>
+                            <th class="text-center p-2">Mejor</th>
+                            <th class="text-center p-2">%</th>
+                            <th class="text-left p-2">Fecha mejor intento</th>
+                            <th class="text-left p-2 no-print">Accion</th>
+                        </tr>
+                    </thead>
+                    <tbody id="students-table"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</div>
+
+<div id="print-area" class="print-area"></div>
+
+<script>
+const state = {
+    attendance: [],
+    scores: [],
+    report: []
+};
+const TEACHER_PIN = 'ABC987';
+const TEACHER_SESSION_KEY = 'teacherPanelUnlockedABC987';
+const GOOGLE_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1isV0oyTbiSGAWB5DZuNUjU8R3fm8H6pnPxcp_eOHb5s/gviz/tq?tqx=out:csv&gid=1269339761';
+
+const normalizeCi = value => String(value || '').replace(/\D/g, '');
+const clean = value => String(value || '').replace(/\s+/g, ' ').trim();
+const upper = value => clean(value).toUpperCase();
+const formatName = value => upper(value);
+const formatCi = value => {
+    const digits = normalizeCi(value);
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
+const hasLongCi = value => normalizeCi(value).length > 7;
+
+function splitRows(text) {
+    return String(text || '').replace(/\r/g, '').split('\n').filter(line => line.trim());
+}
+
+function detectDelimiter(line) {
+    if ((line.match(/\t/g) || []).length >= 2) return '\t';
+    if ((line.match(/;/g) || []).length >= 2) return ';';
+    return ',';
+}
+
+function parseDelimited(text) {
+    const rows = splitRows(text);
+    if (!rows.length) return [];
+    const delimiter = detectDelimiter(rows[0]);
+    const headers = parseLine(rows[0], delimiter).map(h => clean(h));
+    return rows.slice(1).map(line => {
+        const cells = parseLine(line, delimiter);
+        const row = {};
+        headers.forEach((header, idx) => row[header] = clean(cells[idx]));
+        return row;
+    }).filter(row => Object.values(row).some(Boolean));
+}
+
+function parseLine(line, delimiter) {
+    const out = [];
+    let current = '';
+    let quoted = false;
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+            if (quoted && line[i + 1] === '"') {
+                current += '"';
+                i++;
+            } else {
+                quoted = !quoted;
+            }
+        } else if (char === delimiter && !quoted) {
+            out.push(current);
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    out.push(current);
+    return out;
+}
+
+function pick(row, names) {
+    const keys = Object.keys(row);
+    for (const name of names) {
+        const key = keys.find(k => upper(k) === upper(name) || upper(k).includes(upper(name)));
+        if (key && row[key] !== undefined) return row[key];
+    }
+    return '';
+}
+
+function normalizeAttendance(rows) {
+    const byCi = new Map();
+    rows.forEach(row => {
+        const ciRaw = pick(row, ['Cedula de Identidad', 'Cedula', 'CI', 'Documento']);
+        const ci = normalizeCi(ciRaw);
+        if (!ci) return;
+        const item = {
+            timestamp: pick(row, ['Marca temporal', 'Timestamp', 'Fecha']),
+            name: clean(pick(row, ['Nombre y Apellido', 'Nombre Apellido', 'Nombre'])),
+            ci,
+            ciDisplay: clean(ciRaw),
+            career: clean(pick(row, ['CARRERA', 'Carrera'])) || 'SIN CARRERA'
+        };
+        byCi.set(ci, { ...(byCi.get(ci) || {}), ...item });
+    });
+    return [...byCi.values()];
+}
+
+function normalizeScores(rows) {
+    if (Array.isArray(rows) && rows.length && rows[0].rawAnswers) {
+        return rows.map(row => normalizeScoreRecord(row));
+    }
+    return rows.map(row => normalizeScoreRecord(row)).filter(row => row.ci);
+}
+
+function normalizeScoreRecord(row) {
+    const ciRaw = row.ci || pick(row, ['Cedula', 'Cedula de Identidad', 'CI']);
+    const scoreRaw = row.score ?? row.puntaje ?? pick(row, ['Puntaje', 'Nota', 'Score']);
+    const scoreMatch = String(scoreRaw || '').match(/(\d+(?:[.,]\d+)?)/);
+    const score = scoreMatch ? Number(scoreMatch[1].replace(',', '.')) : 0;
+    const detail = row.rawAnswers || row.answers || pick(row, ['Respuesta', 'Respuestas', 'Detalle']) || '';
+    const detailAttempt = String(detail).match(/Intento:\s*(\d+)/i);
+    const detailDateTime = String(detail).match(/Fecha:\s*([^\n]+)/i);
+    const dateTimeFromDetail = detailDateTime ? clean(detailDateTime[1]) : '';
+    const dateFromDetail = dateTimeFromDetail.split(' ')[0] || '';
+    const timeFromDetail = dateTimeFromDetail.split(' ').slice(1).join(' ') || '';
+    const timestamp = row.datetime || pick(row, ['Marca temporal', 'Timestamp']) || '';
+    const date = row.date || pick(row, ['Fecha']) || dateFromDetail || timestamp;
+    const time = row.time || pick(row, ['Hora']) || timeFromDetail || '';
+    
+    const detailStart = String(detail).match(/Inicio:\s*([^\n\r]+)/i);
+    const detailEnd = String(detail).match(/Fin:\s*([^\n\r]+)/i);
+    const startTime = row.startTime || (detailStart ? clean(detailStart[1]) : '');
+    const endTime = row.endTime || (detailEnd ? clean(detailEnd[1]) : '');
+
+    return {
+        name: clean(row.name || pick(row, ['Nombre Apellido', 'Nombre y Apellido', 'Nombre'])),
+        ci: normalizeCi(ciRaw),
+        ciDisplay: clean(ciRaw),
+        score,
+        attempt: Number(row.attempt || pick(row, ['Intento']) || (detailAttempt ? detailAttempt[1] : 1)),
+        date,
+        time,
+        startTime,
+        endTime,
+        percent: Math.round((score / 30) * 100),
+        answers: detail,
+        source: row.source || 'archivo'
+    };
+}
+
+function buildReport() {
+    const scoreByCi = new Map();
+    state.scores.forEach(score => {
+        if (!score.ci) return;
+        const list = scoreByCi.get(score.ci) || [];
+        list.push(score);
+        scoreByCi.set(score.ci, list);
+    });
+
+    const attendanceByCi = new Map(state.attendance.map(item => [item.ci, item]));
+    state.scores.forEach(score => {
+        if (!attendanceByCi.has(score.ci)) {
+            attendanceByCi.set(score.ci, {
+                name: score.name,
+                ci: score.ci,
+                ciDisplay: score.ciDisplay || score.ci,
+                career: 'SIN ASISTENCIA',
+                timestamp: ''
+            });
+        }
+    });
+
+    state.report = [...attendanceByCi.values()].map(student => {
+        const attempts = (scoreByCi.get(student.ci) || []).sort((a, b) => a.attempt - b.attempt || new Date(a.date || 0) - new Date(b.date || 0));
+        const best = attempts.length ? [...attempts].sort((a, b) => b.score - a.score)[0] : null;
+        return {
+            ...student,
+            attempts,
+            firstAttempt: attempts.find(item => item.attempt === 1) || attempts[0] || null,
+            secondAttempt: attempts.find(item => item.attempt === 2) || attempts[1] || null,
+            best,
+            bestScore: best ? best.score : null,
+            percent: best ? best.percent : null
+        };
+    }).sort(compareStudents);
+
+    hydrateFilters();
+    renderReport();
+}
+
+function compareStudents(a, b) {
+    return upper(a.career).localeCompare(upper(b.career))
+        || Number(a.ci) - Number(b.ci)
+        || upper(a.name).localeCompare(upper(b.name));
+}
+
+function filteredReport() {
+    const career = document.getElementById('career-filter').value;
+    const status = document.getElementById('status-filter').value;
+    const query = upper(document.getElementById('search-box').value);
+    return state.report.filter(row => {
+        if (career && row.career !== career) return false;
+        if (status === 'scored' && !row.best) return false;
+        if (status === 'missing' && row.best) return false;
+        if (query && !upper(`${row.ci} ${formatCi(row.ci)} ${row.name}`).includes(query)) return false;
+        return true;
+    });
+}
+
+function renderReport() {
+    const rows = filteredReport();
+    const tbody = document.getElementById('students-table');
+    tbody.innerHTML = rows.map(row => {
+        const best = row.best;
+        const firstCell = row.firstAttempt ? `${row.firstAttempt.score}/30` : '-';
+        const secondCell = row.secondAttempt ? `${row.secondAttempt.score}/30` : '-';
+        const scoreCell = best ? `${best.score}/30` : 'SN';
+        const percentCell = best ? `${best.percent}%` : '-';
+        const dateCell = best ? `${best.date || ''} ${best.time || ''}`.trim() : '-';
+        const ciText = formatCi(row.ci);
+        const ciClass = hasLongCi(row.ci) ? 'bg-red-100 text-red-700 font-bold rounded px-2 py-1 inline-block' : '';
+        return `
+            <tr class="border-t ${best ? '' : 'bg-red-50'}">
+                <td class="p-2">${escapeHtml(row.career)}</td>
+                <td class="p-2 tabular"><span class="${ciClass}">${escapeHtml(ciText)}</span></td>
+                <td class="p-2 font-semibold">${escapeHtml(formatName(row.name))}</td>
+                <td class="p-2 text-center tabular">${firstCell}</td>
+                <td class="p-2 text-center tabular">${secondCell}</td>
+                <td class="p-2 text-center font-bold tabular">${scoreCell}</td>
+                <td class="p-2 text-center tabular">${percentCell}</td>
+                <td class="p-2">${escapeHtml(dateCell)}</td>
+                <td class="p-2 no-print">
+                    <button class="text-xs text-green-700 hover:underline" onclick="printSingleActa('${row.ci}')">Acta</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    renderStats(rows);
+}
+
+function renderStats(rows) {
+    const scored = rows.filter(row => row.best);
+    const attempts = rows.reduce((sum, row) => sum + row.attempts.length, 0);
+    const avg = scored.length ? (scored.reduce((sum, row) => sum + row.bestScore, 0) / scored.length).toFixed(1) : '-';
+    document.getElementById('stat-students').textContent = rows.length;
+    document.getElementById('stat-scored').textContent = scored.length;
+    document.getElementById('stat-attempts').textContent = attempts;
+    document.getElementById('stat-average').textContent = avg;
+    document.getElementById('stat-actas').textContent = scored.length;
+}
+
+function hydrateFilters() {
+    const select = document.getElementById('career-filter');
+    const current = select.value;
+    const careers = [...new Set(state.report.map(row => row.career))].sort((a, b) => upper(a).localeCompare(upper(b)));
+    select.innerHTML = '<option value="">Todas</option>' + careers.map(c => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join('');
+    select.value = careers.includes(current) ? current : '';
+}
+
+function renderActas(rows) {
+    const area = document.getElementById('print-area');
+    area.innerHTML = rows.filter(row => row.best).sort(compareStudents).map(row => {
+        const best = row.best;
+        const ciText = formatCi(row.ci);
+        const ciWarning = hasLongCi(row.ci) ? ' <span style="color:#b91c1c; font-weight:bold;">(verificar: mas de 7 digitos)</span>' : '';
+        const verificationCode = `SO-${new Date().getFullYear().toString().slice(2)}${String(new Date().getMonth()+1).padStart(2,'0')}${String(new Date().getDate()).padStart(2,'0')}-${row.ci}`;
+        const qrSrc = `https://chart.googleapis.com/chart?chs=120x120&cht=qr&chl=${encodeURIComponent(verificationCode)}`;
+        const attemptsRows = row.attempts.map(at => {
+            const isBest = best && at.attempt === best.attempt;
+            const mark = isBest ? ' (Mejor)' : '';
+            return `<tr class="${isBest ? 'bg-green-50' : ''}">
+                <td class="border p-2 text-center">${at.attempt}${mark}</td>
+                <td class="border p-2 text-center">${at.score}/30</td>
+                <td class="border p-2 text-center">${at.percent}%</td>
+                <td class="border p-2">${escapeHtml(`${at.date || ''} | Inicio: ${at.startTime || '-'} | Fin: ${at.endTime || at.time || '-'}`)}</td>
+            </tr>`;
+        }).join('');
+        return `
+            <section class="acta-page">
+                <div style="border: 4px double #333; padding: 24px; min-height: 88vh;">
+                    <div style="text-align:center; border-bottom: 3px solid #2c5d3d; padding-bottom: 14px; margin-bottom: 18px;">
+                        <h1 style="margin:0; color:#2c5d3d; font-size:24px;">INSTITUTO SUPERIOR CENTURIA</h1>
+                        <p style="margin:4px 0 0; text-transform:uppercase; letter-spacing:2px;">Acta de examen - Sociologia</p>
+                    </div>
+                    <table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:18px;">
+                        <tr><td style="padding:6px; font-weight:bold; width:160px;">Carrera:</td><td style="padding:6px;">${escapeHtml(row.career)}</td></tr>
+                        <tr><td style="padding:6px; font-weight:bold;">Cedula:</td><td style="padding:6px;">${escapeHtml(ciText)}${ciWarning}</td></tr>
+                        <tr><td style="padding:6px; font-weight:bold;">Estudiante:</td><td style="padding:6px; text-transform:uppercase;">${escapeHtml(formatName(row.name))}</td></tr>
+                    </table>
+                    <div style="border:2px solid #2c5d3d; background:#f0fdf4; text-align:center; padding:12px; margin:10px 0;">
+                        <p style="margin:0; font-size:12px; text-transform:uppercase; color:#555;">Mejor puntaje</p>
+                        <p style="margin:2px 0; font-size:32px; font-weight:bold; color:#2c5d3d;">${best.score}/30</p>
+                    </div>
+                    <table style="width:100%; border-collapse:collapse; font-size:11px; margin-top:10px;">
+                        <thead>
+                            <tr style="background:#2c5d3d; color:white;">
+                                <th style="padding:7px; border:1px solid #ddd;">Intento</th>
+                                <th style="padding:7px; border:1px solid #ddd;">Pts</th>
+                                <th style="padding:7px; border:1px solid #ddd;">%</th>
+                                <th style="padding:7px; border:1px solid #ddd;">Detalles</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${attemptsRows}
+                        </tbody>
+                    </table>
+                    <div style="margin-top:10px; text-align:center;">
+                        <p><strong>Código:</strong> <span class="font-mono" style="font-size:11px;">${verificationCode}</span></p>
+                        <img src="${qrSrc}" alt="QR" style="width:100px; height:100px; margin-top:5px;"/>
+                    </div>
+                    <div style="display:flex; justify-content:center; margin-top:20px;">
+                        <div style="width:210px; text-align:center; padding-top:6px;">
+                            Lic. Christhian Keim<br>Docente
+                        </div>
+                    </div>
+                </div>
+            </section>
+        `;
+    }).join('');
+}
+
+/* Adjust print layout for 4 actas per page */
+@media print {
+    .acta-page {
+        width: 48%;
+        display: inline-block;
+        page-break-inside: avoid;
+        margin: 1%;
+    }
+    .acta-page:nth-child(2n) { margin-left: 2%; }
+    .acta-page {
+        page-break-after: auto !important;
+    }
+}
+
+function printSingleActa(ci) {
+    const row = state.report.find(item => item.ci === ci);
+    if (!row) return;
+    renderActas([row]);
+    window.print();
+}
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+    }[char]));
+}
+
+function escapeAttr(value) {
+    return escapeHtml(value).replace(/"/g, '&quot;');
+}
+
+async function readFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsText(file, 'UTF-8');
+    });
+}
+
+document.getElementById('attendance-file').addEventListener('change', async event => {
+    const file = event.target.files[0];
+    if (!file) return;
+    state.attendance = normalizeAttendance(parseDelimited(await readFile(file)));
+    buildReport();
+});
+
+document.getElementById('scores-file').addEventListener('change', async event => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const fileName = file.name.toLowerCase();
+    const status = document.getElementById('sheet-status');
+    status.textContent = 'Procesando archivo...';
+    try {
+        if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
+            const data = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const buffer = e.target.result;
+                        const workbook = XLSX.read(buffer, { type: 'array' });
+                        const firstSheet = workbook.SheetNames[0];
+                        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: '' });
+                        resolve(rows);
+                    } catch (err) {
+                        reject(err);
+                    }
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+            state.scores = normalizeScores(data);
+            status.textContent = `Excel cargado exitosamente (${state.scores.length} registros).`;
+        } else {
+            const text = await readFile(file);
+            if (fileName.endsWith('.json')) {
+                const json = JSON.parse(text);
+                state.scores = normalizeScores(json.resultados || json.results || json);
+            } else {
+                state.scores = normalizeScores(parseDelimited(text));
+            }
+            status.textContent = `Archivo cargado exitosamente (${state.scores.length} registros).`;
+        }
+        buildReport();
+    } catch (error) {
+        console.error(error);
+        status.textContent = `Error al cargar archivo: ${error.message}`;
+    }
+});
+
+document.getElementById('load-local-results').addEventListener('click', () => {
+    state.scores = normalizeScores(JSON.parse(localStorage.getItem('socioResults') || '[]'));
+    buildReport();
+    document.getElementById('sheet-status').textContent = `Resultados cargados del navegador: ${state.scores.length} registros.`;
+});
+
+async function loadFromUrl(url) {
+    const status = document.getElementById('sheet-status');
+    if (!url || !url.trim()) {
+        status.textContent = 'Por favor ingrese una URL válida.';
+        return;
+    }
+    status.textContent = 'Descargando datos desde la URL...';
+    try {
+        let targetUrl = url.trim();
+        
+        // Convert Google Sheets view/edit URL to export CSV/XLSX URL if matched
+        const sheetIdMatch = targetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+        if (sheetIdMatch && targetUrl.includes('docs.google.com/spreadsheets')) {
+            const sheetId = sheetIdMatch[1];
+            const gidMatch = targetUrl.match(/[#&?]gid=([0-9]+)/);
+            const gid = gidMatch ? gidMatch[1] : '0';
+            targetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
+        }
+        
+        const response = await fetch(targetUrl);
+        if (!response.ok) throw new Error(`Error de HTTP ${response.status}`);
+        
+        const contentType = response.headers.get('content-type') || '';
+        const urlLower = targetUrl.toLowerCase();
+        
+        if (contentType.includes('application/json') || urlLower.endsWith('.json')) {
+            const json = await response.json();
+            state.scores = normalizeScores(json.resultados || json.results || json);
+        } else if (contentType.includes('sheet') || contentType.includes('excel') || contentType.includes('officedocument') || urlLower.includes('.xlsx') || urlLower.includes('.xls') || urlLower.includes('export?format=xlsx')) {
+            const buffer = await response.arrayBuffer();
+            const workbook = XLSX.read(buffer, { type: 'array' });
+            const firstSheet = workbook.SheetNames[0];
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: '' });
+            state.scores = normalizeScores(rows);
+        } else {
+            const text = await response.text();
+            if (text.trim().toLowerCase().startsWith('<!doctype html') || text.trim().toLowerCase().startsWith('<html')) {
+                throw new Error("El enlace devuelto es una página HTML. Asegúrese de que el archivo esté publicado como 'Cualquier persona con el enlace' o use 'Publicar en la web' y exporte a CSV.");
+            }
+            state.scores = normalizeScores(parseDelimited(text));
+        }
+        
+        buildReport();
+        status.textContent = `Puntajes cargados desde URL (${state.scores.length} registros).`;
+    } catch (error) {
+        console.error(error);
+        status.textContent = `Error al cargar desde URL: ${error.message}. Asegúrese de que el enlace sea público y permita acceso CORS.`;
+    }
+}
+
+document.getElementById('load-google-sheet').addEventListener('click', async () => {
+    await loadFromUrl(GOOGLE_SHEET_CSV_URL);
+});
+
+document.getElementById('load-scores-url').addEventListener('click', () => {
+    const url = document.getElementById('scores-url').value;
+    loadFromUrl(url);
+});
+
+document.getElementById('scores-url').addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+        const url = event.target.value;
+        loadFromUrl(url);
+    }
+});
+
+document.getElementById('load-sample-attendance').addEventListener('click', async () => {
+    try {
+        const response = await fetch('asistencia.txt');
+        if (!response.ok) throw new Error('No disponible');
+        state.attendance = normalizeAttendance(parseDelimited(await response.text()));
+        buildReport();
+    } catch (error) {
+        alert('No se pudo leer asistencia.txt automaticamente. Cargue el archivo con el selector.');
+    }
+});
+
+function exportTrackingExcel() {
+    const rows = filteredReport();
+    if (rows.length === 0) {
+        alert('No hay datos para exportar.');
+        return;
+    }
+    
+    const data = rows.map(row => {
+        const best = row.best;
+        const first = row.firstAttempt;
+        const second = row.secondAttempt;
+        const verificationCode = `SO-200526-${row.ci}`;
+        const qrLink = `https://chart.googleapis.com/chart?chs=120x120&cht=qr&chl=${encodeURIComponent(verificationCode)}`;
+        return {
+            'Carrera': row.career,
+            'Cédula de Identidad': formatCi(row.ci),
+            'Nombre y Apellido': formatName(row.name),
+            '1er Intento (Puntaje)': first ? `${first.score}/30` : '-',
+            '2do Intento (Puntaje)': second ? `${second.score}/30` : '-',
+            'Mejor Puntaje': best ? `${best.score}/30` : 'SN',
+            'Porcentaje': best ? `${best.percent}%` : '-',
+            'Fecha Examen': best ? (best.date || '') : '-',
+            'Hora Inicio (Mejor)': best ? (best.startTime || '-') : '-',
+            'Hora Fin (Mejor)': best ? (best.endTime || best.time || '-') : '-',
+            'Intentos Realizados': row.attempts.length,
+            'Código Verificación': verificationCode,
+            'QR Enlace': qrLink
+        };
+    });
+    
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Seguimiento Docente');
+    
+    const max_len = {};
+    data.forEach(row => {
+        Object.keys(row).forEach(key => {
+            const val = String(row[key] || '');
+            max_len[key] = Math.max(max_len[key] || key.length, val.length);
+        });
+    });
+    worksheet['!cols'] = Object.keys(max_len).map(key => ({ wch: max_len[key] + 3 }));
+    
+    XLSX.writeFile(workbook, `Seguimiento_Docente_Sociologia_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+
+document.getElementById('export-excel').addEventListener('click', exportTrackingExcel);
+document.getElementById('build-report').addEventListener('click', buildReport);
+document.getElementById('print-report').addEventListener('click', () => window.print());
+document.getElementById('print-actas').addEventListener('click', () => {
+    renderActas(filteredReport());
+    window.print();
+});
+
+['career-filter', 'status-filter', 'search-box'].forEach(id => {
+    document.getElementById(id).addEventListener('input', renderReport);
+});
+
+document.getElementById('generated-at').textContent = new Date().toLocaleString('es-PY');
+state.scores = normalizeScores(JSON.parse(localStorage.getItem('socioResults') || '[]'));
+renderReport();
+
+function unlockPanel() {
+    const pin = document.getElementById('teacher-pin').value.trim();
+    if (pin !== TEACHER_PIN) {
+        document.getElementById('lock-error').classList.remove('hidden');
+        return;
+    }
+    sessionStorage.setItem(TEACHER_SESSION_KEY, '1');
+    document.getElementById('lock-screen').classList.add('hidden');
+    document.getElementById('teacher-app').classList.remove('hidden');
+    document.getElementById('lock-error').classList.add('hidden');
+    document.getElementById('load-sample-attendance').click();
+    document.getElementById('load-google-sheet').click();
+}
+
+document.getElementById('unlock-btn').addEventListener('click', unlockPanel);
+document.getElementById('teacher-pin').addEventListener('keydown', event => {
+    if (event.key === 'Enter') unlockPanel();
+});
+
+if (sessionStorage.getItem(TEACHER_SESSION_KEY) === '1') {
+    document.getElementById('lock-screen').classList.add('hidden');
+    document.getElementById('teacher-app').classList.remove('hidden');
+    setTimeout(() => {
+        document.getElementById('load-sample-attendance').click();
+        document.getElementById('load-google-sheet').click();
+    }, 0);
+}
+</script>
+</body>
+</html>
