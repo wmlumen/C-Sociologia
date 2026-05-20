@@ -13,6 +13,8 @@ cedula.docente=1340130
 cedula.prueba=99
 # Cédula para acceder al panel del docente
 cedula.panel.docente=1340130
+# Código para examen extraordinario
+codigo.examen.extraordinario=CE-EXT-26
 
 # === INFORMACIÓN DEL CURSO ===
 grupo=S026
@@ -36,6 +38,14 @@ puntaje.aprobacion=60
 fecha.examen=19/05/2026
 fecha.limite=20/05/2026
 
+# === MOTIVOS PARA EXAMEN EXTRAORDINARIO ===
+# Estos son los motivos disponibles para solicitar examen extraordinario
+motivo.enfermedad=Enfermedad
+motivo.falta.pago=Falta de Pago
+motivo.trabajo=Trabajo
+motivo.familiar=Problema Familiar
+motivo.otro=Otros
+
 # === LINKS ===
 # Link de Google Forms (dejar vacío si no hay)
 link.google.forms=
@@ -43,6 +53,8 @@ link.google.forms=
 link.asistencia=https://docs.google.com/spreadsheets/d/1mMd2UbVxCQqLz4IaMUX88CE-Ov6F4ndp1NjxE9m-pY4
 # Link de Google Sheets respuestas
 link.respuestas=https://docs.google.com/spreadsheets/d/1isV0oyTbiSGAWB5DZuNUjU8R3fm8H6pnPxcp_eOHb5s
+# Link para solicitudes extraordinarias (Google Forms)
+link.solicitudes.extraordinarias=https://docs.google.com/forms/d/1ABC123XYZ/edit
 
 # === PREGUNTAS DEL EXAMEN ===
 # Las preguntas están integradas en index.html
