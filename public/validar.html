@@ -96,11 +96,10 @@
                 
                 <div class="space-y-3">
                     <div>
-                        <label class="block text-xs font-bold text-gray-600 mb-1">Código de Solicitud</label>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">Código de Solicitud (enviado por email)</label>
                         <input type="text" id="codigo-solicitud" 
                             class="w-full border-2 border-yellow-300 rounded-lg px-3 py-2 text-center font-bold"
-                            placeholder="Ej: CE-EXT-26"
-                            value="CE-EXT-26">
+                            placeholder="Ej: CE-EXT-26">
                     </div>
                     
                     <div>
@@ -172,50 +171,50 @@
     </div>
 
     <script>
-        // Lista de alumnos (se carga desde localStorage o se define aquí)
-        const alumnos = [
-            // INGENIERÍA COMERCIAL - HABILITADOS
-            { carrera: "IC", cedula: "4245416", nombre: "JORGE MIGUEL AMARILLA FERNANDEZ", factura: "INV-2026-0001", estado: "*" },
-            { carrera: "IC", cedula: "4745870", nombre: "SUSANA BEATRIZ ESPINOLA RAMIREZ", factura: "INV-2026-0002", estado: "*" },
-            { carrera: "IC", cedula: "12345678", nombre: "JUAN PABLO PEREZ GONZALEZ", factura: "INV-2026-0003", estado: "*" },
-            { carrera: "IC", cedula: "98765432", nombre: "MARIA JOSE LOPEZ RIOS", factura: "INV-2026-0004", estado: "*" },
-            { carrera: "IC", cedula: "55667788", nombre: "CARLOS EDUARDO RODRIGUEZ SOLIS", factura: "INV-2026-0005", estado: "*" },
-            { carrera: "IC", cedula: "11223344", nombre: "ANA LUCIA FERNANDEZ BRITEZ", factura: "INV-2026-0006", estado: "*" },
-            { carrera: "IC", cedula: "99887766", nombre: "LUCAS MATIAS ACOSTA ORTIZ", factura: "INV-2026-0007", estado: "*" },
-            { carrera: "IC", cedula: "44556677", nombre: "ROBERTO CARLOS BENITEZ VERON", factura: "INV-2026-0008", estado: "*" },
-            { carrera: "IC", cedula: "66778899", nombre: "PATRICIA SOLEDAD GOMEZ CUEVAS", factura: "INV-2026-0009", estado: "*" },
-            { carrera: "IC", cedula: "22334455", nombre: "JESICA MARIELA AGUERO FARIÑA", factura: "INV-2026-0010", estado: "*" },
-            { carrera: "IC", cedula: "77889900", nombre: "MARCOS ANTONIO DA SILVA RAMIREZ", factura: "INV-2026-0011", estado: "*" },
-            { carrera: "IC", cedula: "33445566", nombre: "CLAUDIA VANESA ESCOBAR CARDOZO", factura: "INV-2026-0012", estado: "*" },
-            { carrera: "IC", cedula: "88990011", nombre: "WALTER DANIEL GONZALEZ LUNA", factura: "INV-2026-0013", estado: "*" },
-            { carrera: "IC", cedula: "99001122", nombre: "OMAR ENRIQUE NUÑEZ ROTELA", factura: "INV-2026-0015", estado: "*" },
-            
-            // CONTABILIDAD - HABILITADOS
-            { carrera: "CN", cedula: "66778899", nombre: "CARMEN LUCIA BENITEZ FERNANDEZ", factura: "INV-2026-0102", estado: "*" },
-            { carrera: "CN", cedula: "77889900", nombre: "LORENA BEATRIZ ROMERO ESCOBAR", factura: "INV-2026-0103", estado: "*" },
-            { carrera: "CN", cedula: "88990011", nombre: "SILVIA PATRICIA GUTIERREZ RUIZ", factura: "INV-2026-0104", estado: "*" },
-            { carrera: "CN", cedula: "99001122", nombre: "GLORIA MARISOL FLORES CACERES", factura: "INV-2026-0105", estado: "*" },
-            { carrera: "CN", cedula: "11223344", nombre: "MONICA YOHANA ALVARENGA VERA", factura: "INV-2026-0106", estado: "*" },
-            { carrera: "CN", cedula: "22334455", nombre: "SANDRA LILIANA GIMENEZ FRANCO", factura: "INV-2026-0107", estado: "*" },
-            { carrera: "CN", cedula: "33445566", nombre: "ANDREA CAROLINA OJEDA MOREL", factura: "INV-2026-0108", estado: "*" },
-            { carrera: "CN", cedula: "44556677", nombre: "CONCEPCION ELENA ORTIGOZA RUIZ", factura: "INV-2026-0109", estado: "*" },
-            { carrera: "CN", cedula: "55667788", nombre: "CELIA ROSA BRITEZ FARIÑA", factura: "INV-2026-0110", estado: "*" },
-            { carrera: "CN", cedula: "66778899", nombre: "FLORENCIA MARIA GONZALEZ SOSA", factura: "INV-2026-0111", estado: "*" },
-            { carrera: "CN", cedula: "77889900", nombre: "ELVIRA TERESA RAMIREZ AQUINO", factura: "INV-2026-0112", estado: "*" },
-            { carrera: "CN", cedula: "88990011", nombre: "SARA ISABEL VERA LOPEZ", factura: "INV-2026-0113", estado: "*" },
-            { carrera: "CN", cedula: "99001122", nombre: "LIDIA MERCEDES COLMAN MORA", factura: "INV-2026-0114", estado: "*" },
-            { carrera: "CN", cedula: "10111213", nombre: "MARGARITA ROSA DELGADO ARCE", factura: "INV-2026-0115", estado: "*" },
-            
-            // CONSULTA (NO HABILITADOS)
-            { carrera: "IC", cedula: "12345679", nombre: "PEDRO JOAQUIN FERREIRA GARCIA", factura: "consulta", estado: "consulta" },
-            { carrera: "CN", cedula: "98765431", nombre: "MARIA ELENA CABRERA NUÑEZ", factura: "consulta", estado: "consulta" },
-            { carrera: "IC", cedula: "55556666", nombre: "JOSE LUIS FERNANDEZ SANCHEZ", factura: "consulta", estado: "consulta" },
-            { carrera: "CN", cedula: "77778888", nombre: "LUZ MARINA RAMIREZ MOREL", factura: "consulta", estado: "consulta" },
-            { carrera: "IC", cedula: "33334444", nombre: "RAUL ALEJANDRO GONZALEZ TORRES", factura: "consulta", estado: "consulta" }
-        ];
-        
-        // Código para examen extraordinario
+        // Código para examen extraordinario (se carga desde CONFIG o usa valor por defecto)
         const CODIGO_EXTRAORDINARIO = 'CE-EXT-26';
+        
+        // Función para cargar alumnos desde el archivo CSV
+        async function cargarAlumnos() {
+            try {
+                const response = await fetch('Listado_Alumnos.csv');
+                if (!response.ok) throw new Error('No se pudo cargar');
+                
+                const texto = await response.text();
+                const lineas = texto.split('\n');
+                const alumnos = [];
+                
+                // Saltar la primera línea (encabezados)
+                for (let i = 1; i < lineas.length; i++) {
+                    const linea = lineas[i].trim();
+                    if (!linea) continue;
+                    
+                    const partes = linea.split(',');
+                    if (partes.length >= 6) {
+                        // Formato: Carrera,Cédula,Apellido Nombre,Ficha,Nro Factura,Estado
+                        const estado = partes[5].trim();
+                        // Solo incluir los que tienen * (habilitados) para validación
+                        if (estado === '*') {
+                            alumnos.push({
+                                carrera: partes[0].trim(),
+                                cedula: partes[1].trim(),
+                                nombre: partes[2].trim(),
+                                factura: partes[4].trim(),
+                                estado: estado
+                            });
+                        }
+                    }
+                }
+                
+                return alumnos;
+            } catch (error) {
+                console.log('No se pudo cargar CSV, usando modo limitado');
+                return [];
+            }
+        }
+        
+        // Variables globales
+        let listaAlumnos = [];
         
         function mostrarFormularioExtraordinario() {
             document.getElementById('form-extraordinario').classList.remove('hidden');
@@ -258,8 +257,11 @@
                 return;
             }
             
-            // Buscar el alumno
-            const alumno = alumnos.find(a => a.cedula === cedula);
+            // Buscar el alumno en la lista cargada
+            if (listaAlumnos.length === 0) {
+                listaAlumnos = await cargarAlumnos();
+            }
+            const alumno = listaAlumnos.find(a => a.cedula === cedula);
             
             if (!alumno) {
                 alert('Cédula no encontrada en el sistema');
@@ -290,7 +292,7 @@
             ocultarFormularioExtraordinario();
         }
         
-        function validarAlumno() {
+        async function validarAlumno() {
             const cedula = document.getElementById('cedula-input').value.trim();
             const resultado = document.getElementById('resultado');
             
@@ -299,7 +301,12 @@
                 return;
             }
             
-            const alumno = alumnos.find(a => a.cedula === cedula);
+            // Cargar lista si no está cargada
+            if (listaAlumnos.length === 0) {
+                listaAlumnos = await cargarAlumnos();
+            }
+            
+            const alumno = listaAlumnos.find(a => a.cedula === cedula);
             
             if (!alumno) {
                 resultado.className = 'mt-6 p-4 rounded-lg no-habilitado';
@@ -350,6 +357,12 @@
             if (e.key === 'Enter') {
                 validarAlumno();
             }
+        });
+        
+        // Cargar lista de alumnos al iniciar
+        cargarAlumnos().then(alumnos => {
+            listaAlumnos = alumnos;
+            console.log('Alumnos cargados:', listaAlumnos.length);
         });
     </script>
 
